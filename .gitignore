@@ -35,3 +35,6 @@ frontend/ios/Pods/
 frontend/ios/.symlinks/
 frontend/android/.gradle/
 frontend/android/local.properties
+# --- Firebase service account secrets ---
+firebase-service-account*.json
+*firebase-adminsdk*.json
