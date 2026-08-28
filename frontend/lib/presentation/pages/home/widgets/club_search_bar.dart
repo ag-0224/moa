@@ -10,7 +10,7 @@ class ClubSearchBar extends StatelessWidget {
   final VoidCallback onBack;
   final ValueChanged<String> onChanged;
 
-  static const Color _borderColor = Color(0xFFD9D9D9);
+  static const Color _borderColor = Color(0xFF8B8B8B);
   static const Color _hintColor = Color(0xFF8B8B8B);
 
   @override
@@ -31,7 +31,7 @@ class ClubSearchBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: _borderColor),
                 ),
                 child: Row(
