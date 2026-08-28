@@ -18,4 +18,8 @@ class Assets {
   /// 메인 페이지 상단 헤더 아이콘.
   static const String iconsSearch = 'assets/icons/majesticons_search.svg';
   static const String iconsBell = 'assets/icons/cil_bell.svg';
+
+  /// 동아리에 등록된 사진이 없을 때(ClubModel.thumbnailUrl == null) 대신
+  /// 보여주는 기본 썸네일.
+  static const String clubDefaultThumbnail = 'assets/club_default_thumbnail.png';
 }

@@ -19,8 +19,22 @@ class ClubModel {
   final String name;
   final String category;
   final int memberCount;
+
+  /// null이면 동아리 사진이 없는 경우다 — ClubListItem이 이때
+  /// Assets.clubDefaultThumbnail(기본 썸네일)을 대신 보여준다.
   final String? thumbnailUrl;
   final bool isFavorite;
+
+  ClubModel copyWith({bool? isFavorite}) {
+    return ClubModel(
+      id: id,
+      name: name,
+      category: category,
+      memberCount: memberCount,
+      thumbnailUrl: thumbnailUrl,
+      isFavorite: isFavorite ?? this.isFavorite,
+    );
+  }
 
   factory ClubModel.fromJson(Map<String, dynamic> json) {
     return ClubModel(

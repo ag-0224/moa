@@ -10,6 +10,7 @@ import '../../providers/home/main_tab_provider.dart';
 import '../../widgets/common/navigation/app_bottom_nav_bar.dart';
 import 'widgets/club_list_item.dart';
 import 'widgets/club_section_header.dart';
+import 'widgets/favorite_action_sheet.dart';
 import 'widgets/home_app_bar.dart';
 import 'widgets/team_register_button.dart';
 
@@ -70,6 +71,19 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
     super.dispose();
   }
 
+  Future<void> _handleClubLongPress(ClubModel club, Offset anchor) async {
+    final confirmed = await showFavoriteActionSheet(
+      context: context,
+      anchor: anchor,
+      isFavorite: club.isFavorite,
+    );
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    await ref.read(setClubFavoriteUseCaseProvider)(club.id, !club.isFavorite);
+    ref.invalidate(myClubsProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final myClubs = ref.watch(myClubsProvider);
@@ -81,7 +95,11 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
             const HomeAppBar(),
             Expanded(
               child: myClubs.when(
-                data: (clubs) => _ClubListView(clubs: clubs, scrollController: _scrollController),
+                data: (clubs) => _ClubListView(
+                  clubs: clubs,
+                  scrollController: _scrollController,
+                  onLongPressClub: _handleClubLongPress,
+                ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(child: Text('동아리 목록을 불러오지 못했어요: $error')),
               ),
@@ -107,10 +125,11 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
 }
 
 class _ClubListView extends StatelessWidget {
-  const _ClubListView({required this.clubs, required this.scrollController});
+  const _ClubListView({required this.clubs, required this.scrollController, required this.onLongPressClub});
 
   final List<ClubModel> clubs;
   final ScrollController scrollController;
+  final void Function(ClubModel club, Offset anchor) onLongPressClub;
 
   @override
   Widget build(BuildContext context) {
@@ -135,10 +154,12 @@ class _ClubListView extends StatelessWidget {
       children: [
         if (favorites.isNotEmpty) ...[
           const ClubSectionHeader(title: '즐겨찾기'),
-          for (final club in favorites) ClubListItem(club: club),
+          for (final club in favorites)
+            ClubListItem(club: club, onLongPress: (anchor) => onLongPressClub(club, anchor)),
         ],
         const ClubSectionHeader(title: '전체'),
-        for (final club in clubs) ClubListItem(club: club),
+        for (final club in clubs)
+          ClubListItem(club: club, onLongPress: (anchor) => onLongPressClub(club, anchor)),
       ],
     );
   }
