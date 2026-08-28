@@ -47,3 +47,16 @@ Firebase Authentication(`firebase_auth` + `google_sign_in` / `sign_in_with_apple
 
 이미 다른 로그인 제공자(Provider)로 가입된 이메일로 로그인을 시도하면(예: 구글로 가입한
 이메일과 같은 이메일로 애플 로그인 시도) `POST /auth/login`이 `409 DUPLICATE_EMAIL`을 반환한다.
+
+### 회원가입(추가 정보 입력)
+
+최초 OAuth 로그인 시 서버가 자동으로 만드는 `users` 행에는 이름/이메일만 채워지고
+`nickname`/`major`/`studentId`는 비어(`null`) 있다. `User.profileCompleted`는 이 nickname이
+설정됐는지 여부와 동치이며, `POST /auth/login`과 `GET /users/me` 응답 모두에 포함된다.
+클라이언트는 이 값 하나로 로그인 직후나 앱 재시작 후 세션 복원 시 메인 화면으로 보낼지
+회원가입 화면(추가 정보 입력)으로 보낼지 판단한다: `profileCompleted == false`면
+회원가입 화면, `true`면 메인 화면.
+
+회원가입 화면의 '작성 완료' 버튼은 `PATCH /users/me { "name", "nickname", "major",
+"studentId" }`를 호출한다. 이미 다른 사용자가 쓰고 있는 닉네임이면 `409
+DUPLICATE_NICKNAME`을 반환한다.
