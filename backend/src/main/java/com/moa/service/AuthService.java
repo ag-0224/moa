@@ -12,7 +12,6 @@ import com.moa.filter.exception.DuplicateEmailException;
 import com.moa.filter.exception.FirebaseNotConfiguredException;
 import com.moa.filter.exception.InvalidAuthTokenException;
 import com.moa.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +22,14 @@ import java.util.Optional;
 /**
  * Firebase Authentication(구글/애플)으로 발급된 ID Token을 검증하고,
  * 최초 로그인이면 사용자를 생성한 뒤 MOA 자체 액세스 토큰(JWT)을 발급한다.
+ *
+ * 주의: 예전에는 local 프로필에서 Firebase가 설정되지 않았을 때 idToken 검증을
+ * 건너뛰고 항상 고정된 가짜 사용자("MOA 개발 사용자")로 로그인시키는 우회 경로가
+ * 있었다. 이 때문에 서로 다른 구글/애플 계정으로 로그인해도 전부 같은 계정으로
+ * 취급되는 문제가 있었고, docs/DECISIONS.md·docs/API_CONTRACT.md·backend/README.md에
+ * 문서화된 "Firebase 미설정 시 /auth/login은 503을 반환한다"는 계약과도 어긋났다.
+ * 지금은 문서화된 대로 Firebase가 설정되지 않으면 프로필과 무관하게 항상
+ * FirebaseNotConfiguredException(503)을 던진다.
  */
 @Service
 public class AuthService {
@@ -30,41 +37,20 @@ public class AuthService {
     private final Optional<FirebaseAuth> firebaseAuth;
     private final UserRepository userRepository;
     private final TokenProvider tokenProvider;
-    private final String activeProfile;
-
-    @org.springframework.beans.factory.annotation.Autowired
-    public AuthService(
-            Optional<FirebaseAuth> firebaseAuth,
-            UserRepository userRepository,
-            TokenProvider tokenProvider,
-            @Value("${spring.profiles.active:local}") String activeProfile
-    ) {
-        this.firebaseAuth = firebaseAuth;
-        this.userRepository = userRepository;
-        this.tokenProvider = tokenProvider;
-        this.activeProfile = activeProfile;
-    }
 
     public AuthService(
             Optional<FirebaseAuth> firebaseAuth,
             UserRepository userRepository,
             TokenProvider tokenProvider
     ) {
-        this(firebaseAuth, userRepository, tokenProvider, "prod");
+        this.firebaseAuth = firebaseAuth;
+        this.userRepository = userRepository;
+        this.tokenProvider = tokenProvider;
     }
 
     @Transactional
     public LoginResponse login(String idToken) {
         if (firebaseAuth.isEmpty()) {
-            if ("local".equalsIgnoreCase(activeProfile)) {
-                String devEmail = "user@moa.com";
-                String devName = "MOA 개발 사용자";
-                String devProviderUid = "dev_provider_uid_12345";
-                User user = findOrCreateUser(devEmail, devName, Provider.GOOGLE, devProviderUid);
-
-                String accessToken = tokenProvider.createToken(user.getId(), user.getRole());
-                return new LoginResponse(accessToken, tokenProvider.getExpirationSeconds(), UserResponse.from(user));
-            }
             throw new FirebaseNotConfiguredException();
         }
 
