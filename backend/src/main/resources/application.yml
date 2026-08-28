@@ -45,3 +45,23 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  # Moarium과 동일한 MySQL 8 컨테이너에 연결하는 로컬 Docker 프로필.
+  # 주의: 루트 schema.sql은 PostgreSQL 전용 문법(BIGSERIAL, TIMESTAMP WITH TIME ZONE)을
+  # 사용하므로 MySQL에는 그대로 적용할 수 없다. 계약(schema.sql)을 임의로 바꾸지 않기 위해
+  # 이 프로필은 스키마 계약 대신 Hibernate DDL 생성(ddl-auto=update)으로 테이블을 만든다.
+  # 실제 배포용 스키마 동기화가 필요해지면 계약 변경 절차(AGENTS.md §4)에 따라 논의한다.
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:moa_db}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useUnicode=true&serverTimezone=Asia/Seoul
+    username: ${DB_USERNAME:moa_user}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

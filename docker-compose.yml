@@ -1,0 +1,31 @@
+# MOA 로컬 개발용 MySQL 연결 인프라.
+# 사용 전 저장소 루트에 .env 파일을 만들고 .env.example의 DB_* 값을 채운다.
+#
+# 실행: docker compose up -d database-mysql
+# 백엔드는 별도로 로컬에서 'docker' 프로필로 기동해 이 컨테이너에 접속한다:
+#   SPRING_PROFILES_ACTIVE=docker DB_HOST=localhost ./gradlew bootRun
+services:
+  database-mysql:
+    container_name: moa-database-mysql
+    build: ./database/mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?.env 파일에 DB_PASSWORD를 설정하세요}
+      MYSQL_DATABASE: ${DB_NAME:-moa_db}
+      MYSQL_USER: ${DB_USERNAME:-moa_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?.env 파일에 DB_PASSWORD를 설정하세요}
+      TZ: Asia/Seoul
+    volumes:
+      - moa-mysql-data:/var/lib/mysql
+      - ./database/mysql/scripts:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=caching_sha2_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  moa-mysql-data:
