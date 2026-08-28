@@ -1,7 +1,7 @@
 import '../../../core/error_handling/result.dart';
 import '../../user/models/user_model.dart';
 import '../repositories/auth_repository.dart';
-import '../repositories/entities/auth_provider.enum.dart';
+import '../repositories/entities/auth_provider_type.dart';
 
 class SignInUseCase {
   const SignInUseCase(this._authRepository);

@@ -18,6 +18,12 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
   FirebaseAuthDataSourceImpl([FirebaseAuth? firebaseAuth])
       : _customFirebaseAuth = firebaseAuth;
 
+  /// Firebase 콘솔(moa-app-2026-dev)의 Google OAuth 클라이언트 ID.
+  /// google-services.json / GoogleService-Info.plist와 짝을 이루는 값으로,
+  /// 클라이언트 앱에 포함되어도 안전한 공개 식별자다(비밀 값 아님).
+  static const _googleOAuthClientId =
+      '535931109546-sakkm84ocovltm89r59a3slt8emghj7c.apps.googleusercontent.com';
+
   final FirebaseAuth? _customFirebaseAuth;
 
   FirebaseAuth get _firebaseAuth {
@@ -33,10 +39,10 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
   }
 
   @override
-  Future<UserCredential> signInWithGoogle() async {
-    try {
+  Future<UserCredential> signInWithGoogle() {
+    return _guard('구글 로그인', () async {
       final googleSignIn = GoogleSignIn(
-        clientId: '535931109546-sakkm84ocovltm89r59a3slt8emghj7c.apps.googleusercontent.com',
+        clientId: _googleOAuthClientId,
         scopes: const ['email', 'profile'],
       );
       final googleUser = await googleSignIn.signIn();
@@ -50,16 +56,13 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
         idToken: googleAuth.idToken,
       );
 
-      return await _firebaseAuth.signInWithCredential(credential);
-    } catch (error) {
-      if (error is Exception) rethrow;
-      throw Exception('구글 로그인 오류: $error');
-    }
+      return _firebaseAuth.signInWithCredential(credential);
+    });
   }
 
   @override
-  Future<UserCredential> signInWithApple() async {
-    try {
+  Future<UserCredential> signInWithApple() {
+    return _guard('애플 로그인', () async {
       final rawNonce = _generateNonce();
       final nonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
@@ -77,15 +80,24 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
         rawNonce: rawNonce,
       );
 
-      return await _firebaseAuth.signInWithCredential(oauthCredential);
-    } catch (error) {
-      if (error is Exception) rethrow;
-      throw Exception('애플 로그인 오류: $error');
-    }
+      return _firebaseAuth.signInWithCredential(oauthCredential);
+    });
   }
 
   @override
   Future<void> signOut() => _firebaseAuth.signOut();
+
+  /// [action]을 실행하고, 이미 의미 있는 [Exception]이면 그대로, 아니라면
+  /// "[label] 오류: ..." 형태로 감싸 다시 던진다. signInWithGoogle/signInWithApple의
+  /// 공통 에러 래핑 로직을 모은다.
+  Future<T> _guard<T>(String label, Future<T> Function() action) async {
+    try {
+      return await action();
+    } catch (error) {
+      if (error is Exception) rethrow;
+      throw Exception('$label 오류: $error');
+    }
+  }
 
   String _generateNonce([int length = 32]) {
     const charset =

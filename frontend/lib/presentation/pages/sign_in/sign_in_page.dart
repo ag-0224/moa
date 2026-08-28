@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../features/auth/repositories/entities/auth_provider.enum.dart';
+import '../../../features/auth/repositories/entities/auth_provider_type.dart';
 import '../../providers/auth/auth_controller.dart';
 import '../../providers/auth/auth_state.dart';
 
