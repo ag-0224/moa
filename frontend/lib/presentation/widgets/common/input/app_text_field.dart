@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Figma '최초 접속자 추가 정보 입력 화면'(node-id 3018:204)의 입력 필드.
+/// MOA 전역에서 재사용하는 입력창(라벨 + 둥근 테두리 입력창 + 아래쪽 에러 메시지).
+/// 원래 회원가입 화면(presentation/pages/sign_up/widgets/)에만 있던 위젯을,
+/// 다른 화면에서도 같은 모양의 입력창이 필요할 때 재사용할 수 있도록 공통
+/// 위젯 폴더로 옮겼다.
+///
 /// TechTalk의 UnderValidateTextField(presentation/widgets/common/input/)와 같은
-/// 역할(입력창 + 아래쪽 에러/성공 메시지)이지만, 그 위젯은 flutter_hooks와
-/// 비동기 검증(FutureOr) 콜백을 쓰는 반면 MOA는 hooks 계열 패키지를 쓰지 않으므로
-/// 제출 시점에 동기적으로 계산한 에러 메시지를 errorText로 받는 단순한 형태로 만들었다.
-class SignUpTextField extends StatelessWidget {
-  const SignUpTextField({
+/// 위치·역할이지만, 그 위젯은 flutter_hooks와 비동기 검증(FutureOr) 콜백을 쓰는
+/// 반면 MOA는 hooks 계열 패키지를 쓰지 않으므로 제출 시점에 동기적으로 계산한
+/// 에러 메시지를 errorText로 받는 단순한 형태로 만들었다.
+class AppTextField extends StatelessWidget {
+  const AppTextField({
     super.key,
     required this.label,
     required this.hintText,
