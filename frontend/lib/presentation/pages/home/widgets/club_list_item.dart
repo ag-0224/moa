@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/assets.dart';
 import '../../../../features/club/models/club_model.dart';
 
-/// 동아리 목록의 한 행(썸네일 + 이름 + 대표 이름 + 카테고리 · 인원수).
+/// 동아리 목록의 한 행(썸네일 + 이름 + 대표 이름·카테고리·인원수).
 ///
 /// - thumbnailUrl이 없으면(동아리 사진 미등록) Assets.clubDefaultThumbnail
 ///   기본 이미지를 대신 보여준다.
-/// - 이름 아래에 대표(leaderName) 이름을 한 줄 추가로 보여준다(더미데이터에는
-///   전부 "박승찬"으로 채워져 있음, club_mock_data_source.dart 참고).
+/// - 대표 이름(leaderName)·카테고리·인원수를 한 줄에 같이 보여준다(더미데이터는
+///   전부 대표 이름이 "박승찬", club_mock_data_source.dart 참고).
+/// - 글자 스펙(폰트 크기/굵기/줄간격/자간)은 Figma 값을 최대한 반영하되,
+///   Flutter TextStyle이 표현 못 하는 부분(예: 퍼센트 단위 자간 → 폰트
+///   크기에 비례한 절대값으로 환산)은 근사치로 구현했다.
 /// - 꾹 누르면(long press) onLongPress로 누른 화면 좌표(글로벌 좌표)를
 ///   넘긴다 — 즐겨찾기 추가/삭제 팝업(favorite_action_sheet.dart)을 그
 ///   위치 근처에 띄우는 데 쓴다.
@@ -49,19 +52,25 @@ class ClubListItem extends StatelessWidget {
                   children: [
                     Text(
                       club.name,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      club.leaderName,
-                      style: const TextStyle(fontSize: 13, color: _grayText),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.4, // Figma: -2.5% of 16
+                        color: Colors.black,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${club.category} · ${club.memberCount}명',
-                      style: const TextStyle(fontSize: 13, color: _grayText),
+                      '${club.leaderName} · ${club.category} · ${club.memberCount}명',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        height: 22 / 14, // Figma line-height 22
+                        letterSpacing: -0.35, // Figma: -2.5% of 14
+                        color: _grayText,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
