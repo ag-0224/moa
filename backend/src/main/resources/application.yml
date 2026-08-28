@@ -8,7 +8,7 @@ server:
   port: ${SERVER_PORT:8080}
 
 jwt:
-  secret: ${JWT_SECRET:}
+  secret: ${JWT_SECRET:moa_dev_secret_jwt_key_super_secure_2026_default_local_key}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
 
 ---
