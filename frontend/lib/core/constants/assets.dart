@@ -7,6 +7,10 @@ class Assets {
 
   static const String logo = 'assets/default_logo.svg';
 
+  /// 메인 페이지 상단 헤더 로고(Figma 155x50). 아이콘만 있는 logo와 달리
+  /// "moarium" 워드마크가 함께 그려진 버전이다.
+  static const String logoWithName = 'assets/logo_with_name.svg';
+
   /// TechTalk(assets/icons/google_logo.svg)에서 그대로 가져온 구글 로고.
   static const String iconsGoogleLogo = 'assets/icons/google_logo.svg';
 
