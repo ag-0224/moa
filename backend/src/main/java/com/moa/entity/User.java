@@ -53,6 +53,17 @@ public class User extends BaseEntity {
     @Column(name = "provider_uid", nullable = false)
     private String providerUid;
 
+    // 아래 세 필드는 최초 OAuth 로그인 시점에는 비어 있다(NULL). 회원가입 화면에서
+    // completeProfile()로 채워지기 전까지는 isProfileCompleted()가 false를 반환한다.
+    @Column(length = 50, unique = true)
+    private String nickname;
+
+    @Column(length = 100)
+    private String major;
+
+    @Column(name = "student_id", length = 20)
+    private String studentId;
+
     public static User createOAuthUser(String email, String name, Provider provider, String providerUid) {
         User user = new User();
         user.email = email;
@@ -61,5 +72,25 @@ public class User extends BaseEntity {
         user.provider = provider;
         user.providerUid = providerUid;
         return user;
+    }
+
+    /**
+     * 회원가입 화면('회원 정보 입력')에서 제출한 추가 정보를 채운다.
+     * 이 호출 이후로 {@link #isProfileCompleted()}가 true가 된다.
+     */
+    public void completeProfile(String name, String nickname, String major, String studentId) {
+        this.name = name;
+        this.nickname = nickname;
+        this.major = major;
+        this.studentId = studentId;
+    }
+
+    /**
+     * 회원가입(추가 정보 입력)을 완료했는지 여부. nickname은 completeProfile() 전에는
+     * 항상 NULL이므로, 이 값 하나로 '메인 화면으로 보낼지 회원가입 화면으로 보낼지'를
+     * 판단할 수 있다(로그인 응답과 GET /users/me 응답 양쪽 모두에서 동일하게 동작).
+     */
+    public boolean isProfileCompleted() {
+        return nickname != null;
     }
 }
