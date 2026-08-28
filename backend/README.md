@@ -38,3 +38,34 @@ SPRING_PROFILES_ACTIVE=docker DB_HOST=localhost ./gradlew bootRun
 
 > `docker` 프로필은 루트 `schema.sql`(PostgreSQL 전용 문법)을 그대로 쓰지 않고 Hibernate DDL 생성을 사용한다.
 > 자세한 이유는 `src/main/resources/application.yml`의 `docker` 프로필 주석 참고.
+
+## 인증 (구글/애플 로그인)
+
+MOA는 이메일/비밀번호 로그인을 지원하지 않는다. 클라이언트(Flutter)가 Firebase Authentication으로
+구글/애플 로그인을 완료해 Firebase ID Token을 얻고, 이 토큰을 `POST /auth/login`으로 보내면
+서버가 검증한 뒤 MOA 자체 JWT(`accessToken`)를 발급한다. 자세한 흐름은
+[`docs/API_CONTRACT.md`](../docs/API_CONTRACT.md#3-인증-authentication) 참고.
+
+### Firebase 프로젝트 설정 (최초 1회)
+
+1. [Firebase 콘솔](https://console.firebase.google.com/)에서 새 프로젝트를 만든다 (또는 기존 프로젝트 사용).
+2. **Authentication → Sign-in method**에서 Google, Apple 제공자를 각각 사용 설정한다.
+   - Apple은 Apple Developer 계정에서 Services ID, Key(.p8) 등록이 추가로 필요하다
+     (Firebase 콘솔의 Apple 제공자 설정 화면에 안내가 표시된다).
+3. **프로젝트 설정 → 서비스 계정 → 새 비공개 키 생성**으로 서비스 계정 키(JSON)를 내려받는다.
+   - 이 파일은 절대 저장소에 커밋하지 않는다 (`.gitignore`에 `firebase-service-account*.json`,
+     `*firebase-adminsdk*.json` 패턴이 이미 등록되어 있다).
+4. 저장소 루트의 `.env`(`.env.example` 복사본)에 아래 값을 채운다.
+   ```
+   FIREBASE_PROJECT_ID=<Firebase 프로젝트 ID>
+   FIREBASE_CREDENTIALS_PATH=/absolute/path/to/service-account.json
+   JWT_SECRET=<32바이트 이상의 임의 문자열>
+   ```
+5. `FIREBASE_CREDENTIALS_PATH`를 환경변수로 노출한 채 백엔드를 실행한다.
+   ```bash
+   export $(grep -v '^#' ../.env | xargs)
+   ./gradlew bootRun
+   ```
+
+`FIREBASE_CREDENTIALS_PATH`가 비어 있으면 서버는 정상적으로 뜨지만
+`POST /auth/login`만 `503 FIREBASE_NOT_CONFIGURED`를 반환한다 (다른 API는 영향 없음).
