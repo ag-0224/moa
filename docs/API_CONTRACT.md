@@ -61,6 +61,21 @@ Firebase Authentication(`firebase_auth` + `google_sign_in` / `sign_in_with_apple
 "studentId" }`를 호출한다. 이미 다른 사용자가 쓰고 있는 닉네임이면 `409
 DUPLICATE_NICKNAME`을 반환한다.
 
+### 개인정보 수정 / 회원 탈퇴
+
+마이페이지('내 정보') 화면에서 쓰는 API다.
+
+- 개인정보 수정은 회원가입 때와 같은 `PATCH /users/me` 엔드포인트를 그대로
+  재사용한다 — 최초 제출이냐 이후 수정이냐를 서버가 구분하지 않고 매번 name/
+  nickname/major/studentId 전체를 덮어쓴다. 닉네임 중복 시 `409
+  DUPLICATE_NICKNAME`인 것도 동일하다.
+- `DELETE /users/me` — 회원 탈퇴. 계정을 완전히 삭제한다(soft delete 없음).
+  `club_members`/`club_applications`에 남아있는 해당 사용자의 행도 함께
+  삭제한 뒤 `users` 행을 지운다(둘 다 users.id를 참조하는 외래키에 ON DELETE
+  CASCADE가 없어서, 순서대로 지우지 않으면 외래키 제약 위반이 난다). 삭제
+  후에는 클라이언트가 Firebase 로그아웃 + 저장된 액세스 토큰 삭제까지 해서
+  로그인 화면으로 돌아가야 한다(AuthController.deleteAccount 참고).
+
 ## 4. 동아리 (Club)
 
 메인 페이지 홈 피드와 마이페이지에서 쓰는 동아리 목록/즐겨찾기 API다. 세 엔드포인트 모두

@@ -27,6 +27,7 @@ import '../../features/user/data_source/user_api_data_source.dart';
 import '../../features/user/repositories/user_repository.dart';
 import '../../features/user/repositories/user_repository_impl.dart';
 import '../../features/user/usecases/complete_profile_use_case.dart';
+import '../../features/user/usecases/delete_account_use_case.dart';
 import '../../features/user/usecases/get_my_info_use_case.dart';
 
 /// Riverpod을 DI 컨테이너로 사용한다 (get_it 등 별도 서비스 로케이터 없음).
@@ -71,6 +72,9 @@ final getMyInfoUseCaseProvider = Provider((ref) => GetMyInfoUseCase(ref.watch(us
 
 final completeProfileUseCaseProvider =
     Provider((ref) => CompleteProfileUseCase(ref.watch(userRepositoryProvider)));
+
+final deleteAccountUseCaseProvider =
+    Provider((ref) => DeleteAccountUseCase(ref.watch(userRepositoryProvider)));
 
 final healthApiDataSourceProvider = Provider<HealthApiDataSource>((ref) {
   return HealthApiDataSourceImpl(ref.watch(apiClientProvider));

@@ -37,4 +37,14 @@ final class UserRepositoryImpl implements UserRepository {
       return Result.failure(error);
     }
   }
+
+  @override
+  Future<Result<void>> deleteAccount() async {
+    try {
+      await _userApiDataSource.deleteAccount();
+      return const Result.success(null);
+    } catch (error) {
+      return Result.failure(error);
+    }
+  }
 }

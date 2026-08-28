@@ -10,4 +10,6 @@ abstract interface class UserRepository {
     required String major,
     required String studentId,
   });
+
+  Future<Result<void>> deleteAccount();
 }

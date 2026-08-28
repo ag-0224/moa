@@ -4,7 +4,7 @@ import '../../../app/network/api_client.dart';
 import '../../../core/network/api_envelope.dart';
 import '../models/user_model.dart';
 
-/// openapi.yaml GET/PATCH /users/me 계약과 매핑된다.
+/// openapi.yaml GET/PATCH/DELETE /users/me 계약과 매핑된다.
 abstract interface class UserApiDataSource {
   Future<UserModel> getMyInfo();
 
@@ -14,6 +14,9 @@ abstract interface class UserApiDataSource {
     required String major,
     required String studentId,
   });
+
+  /// 회원 탈퇴. 성공하면 서버에서 계정이 완전히 삭제된다.
+  Future<void> deleteAccount();
 }
 
 final class UserApiDataSourceImpl implements UserApiDataSource {
@@ -46,6 +49,15 @@ final class UserApiDataSourceImpl implements UserApiDataSource {
         'studentId': studentId,
       });
       return ApiEnvelope.unwrap(response.data, UserModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      await _apiClient.dio.delete<Map<String, dynamic>>('/users/me');
     } on DioException catch (e) {
       throw ApiEnvelope.mapError(e);
     }
