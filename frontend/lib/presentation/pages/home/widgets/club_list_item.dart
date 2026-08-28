@@ -65,7 +65,7 @@ class ClubListItem extends StatelessWidget {
                       '${club.leaderName} · ${club.category} · ${club.memberCount}명',
                       style: const TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w400,
                         height: 22 / 14, // Figma line-height 22
                         letterSpacing: -0.35, // Figma: -2.5% of 14
                         color: _grayText,
