@@ -29,11 +29,15 @@ class AuthController extends StateNotifier<AuthState> {
   final GetMyInfoUseCase _getMyInfoUseCase;
 
   Future<void> _restoreSession() async {
-    final result = await _getMyInfoUseCase();
-    result.when(
-      success: (user) => state = AuthAuthenticated(user),
-      failure: (_) => state = const AuthUnauthenticated(),
-    );
+    try {
+      final result = await _getMyInfoUseCase();
+      result.when(
+        success: (user) => state = AuthAuthenticated(user),
+        failure: (_) => state = const AuthUnauthenticated(),
+      );
+    } catch (error) {
+      state = const AuthUnauthenticated();
+    }
   }
 
   Future<void> signIn(AuthProviderType provider) async {

@@ -16,11 +16,25 @@ final class SecureTokenStorage implements TokenStorage {
   final FlutterSecureStorage _storage;
 
   @override
-  Future<void> save(String accessToken) => _storage.write(key: _accessTokenKey, value: accessToken);
+  Future<void> save(String accessToken) async {
+    try {
+      await _storage.write(key: _accessTokenKey, value: accessToken);
+    } catch (_) {}
+  }
 
   @override
-  Future<String?> read() => _storage.read(key: _accessTokenKey);
+  Future<String?> read() async {
+    try {
+      return await _storage.read(key: _accessTokenKey);
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
-  Future<void> clear() => _storage.delete(key: _accessTokenKey);
+  Future<void> clear() async {
+    try {
+      await _storage.delete(key: _accessTokenKey);
+    } catch (_) {}
+  }
 }

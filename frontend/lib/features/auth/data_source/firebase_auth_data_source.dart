@@ -16,9 +16,21 @@ abstract interface class FirebaseAuthDataSource {
 
 final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
   FirebaseAuthDataSourceImpl([FirebaseAuth? firebaseAuth])
-      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+      : _customFirebaseAuth = firebaseAuth;
 
-  final FirebaseAuth _firebaseAuth;
+  final FirebaseAuth? _customFirebaseAuth;
+
+  FirebaseAuth get _firebaseAuth {
+    if (_customFirebaseAuth != null) return _customFirebaseAuth;
+    try {
+      return FirebaseAuth.instance;
+    } catch (error) {
+      throw Exception(
+        'Firebase가 아직 초기화되지 않았거나 설정이 누락되었습니다. '
+        'Google/Apple 로그인을 사용하려면 Firebase 설정(google-services.json / GoogleService-Info.plist)을 완료하세요: $error',
+      );
+    }
+  }
 
   @override
   Future<UserCredential> signInWithGoogle() async {

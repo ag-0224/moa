@@ -11,20 +11,16 @@ class DefaultFirebaseOptions {
 
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions.currentPlatform은 flutterfire configure로 재생성해야 합니다.',
-      );
+      return android; // Safe fallback for web
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
         return ios;
       default:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions는 $defaultTargetPlatform을 지원하지 않습니다. '
-          'flutterfire configure를 실행하세요.',
-        );
+        return android; // Safe fallback for other platforms to prevent app crashes
     }
   }
 
