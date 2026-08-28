@@ -7,6 +7,7 @@ import com.moa.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,5 +40,15 @@ public class UserController {
     ) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(userService.completeProfile(userId, request));
+    }
+
+    /**
+     * 마이페이지('내 정보')의 '회원 탈퇴' 버튼이 호출하는 엔드포인트.
+     */
+    @DeleteMapping("/me")
+    public ApiResponse<Void> deleteAccount(Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        userService.deleteAccount(userId);
+        return ApiResponse.success(null);
     }
 }

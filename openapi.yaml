@@ -640,3 +640,41 @@ paths:
                     nullable: true
                   error:
                     $ref: '#/components/schemas/ApiError'
+    delete:
+      summary: 회원 탈퇴
+      description: >-
+        마이페이지('내 정보')의 '회원 탈퇴' 버튼이 호출한다. 계정을 완전히
+        삭제한다(soft delete 없음). 가입한 동아리(club_members)와 제출한
+        가입 신청(club_applications)도 함께 삭제된다.
+      operationId: deleteAccount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 탈퇴 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    nullable: true
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'

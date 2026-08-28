@@ -5,6 +5,9 @@ import com.moa.dto.request.CompleteProfileRequest;
 import com.moa.dto.response.UserResponse;
 import com.moa.entity.User;
 import com.moa.filter.exception.DuplicateNicknameException;
+import com.moa.filter.exception.InvalidAuthTokenException;
+import com.moa.repository.ClubApplicationRepository;
+import com.moa.repository.ClubMemberRepository;
 import com.moa.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +19,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,9 +29,15 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private ClubMemberRepository clubMemberRepository;
+
+    @Mock
+    private ClubApplicationRepository clubApplicationRepository;
+
     @Test
     void completeProfileFillsNicknameAndMarksProfileCompleted() {
-        UserService userService = new UserService(userRepository);
+        UserService userService = new UserService(userRepository, clubMemberRepository, clubApplicationRepository);
         User user = User.createOAuthUser("user@example.com", "Test User", Provider.GOOGLE, "uid-1");
         CompleteProfileRequest request = new CompleteProfileRequest("홍길동", "gildong", "컴퓨터공학과", "20240001");
 
@@ -43,7 +54,7 @@ class UserServiceTest {
 
     @Test
     void completeProfileThrowsWhenNicknameTakenByAnotherUser() throws Exception {
-        UserService userService = new UserService(userRepository);
+        UserService userService = new UserService(userRepository, clubMemberRepository, clubApplicationRepository);
         User user = User.createOAuthUser("user@example.com", "Test User", Provider.GOOGLE, "uid-1");
         setId(user, 1L);
         User otherUser = User.createOAuthUser("other@example.com", "Other User", Provider.APPLE, "uid-2");
@@ -55,6 +66,34 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.completeProfile(1L, request))
                 .isInstanceOf(DuplicateNicknameException.class);
+    }
+
+    @Test
+    void deleteAccountRemovesClubDataBeforeDeletingUser() {
+        UserService userService = new UserService(userRepository, clubMemberRepository, clubApplicationRepository);
+        User user = User.createOAuthUser("user@example.com", "Test User", Provider.GOOGLE, "uid-1");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.deleteAccount(1L);
+
+        verify(clubApplicationRepository).deleteByUserId(1L);
+        verify(clubMemberRepository).deleteByUserId(1L);
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    void deleteAccountThrowsWhenUserNotFoundAndDeletesNothing() {
+        UserService userService = new UserService(userRepository, clubMemberRepository, clubApplicationRepository);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.deleteAccount(1L))
+                .isInstanceOf(InvalidAuthTokenException.class);
+
+        verify(clubApplicationRepository, never()).deleteByUserId(1L);
+        verify(clubMemberRepository, never()).deleteByUserId(1L);
+        verify(userRepository, never()).delete(org.mockito.ArgumentMatchers.any());
     }
 
     // User.id는 @GeneratedValue라 setter가 없다. 실제로는 DB에 저장되면서 채워지지만,

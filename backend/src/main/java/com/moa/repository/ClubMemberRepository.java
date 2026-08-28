@@ -11,4 +11,12 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
     List<ClubMember> findByUserId(Long userId);
 
     Optional<ClubMember> findByClubIdAndUserId(Long clubId, Long userId);
+
+    /**
+     * 회원 탈퇴(UserService.deleteAccount) 시 club_members에 남아있는 가입 행을
+     * 먼저 정리하기 위해 쓴다. users.id -> club_members.user_id에 ON DELETE
+     * CASCADE가 걸려있지 않아서(schema.sql), 사용자 행을 지우기 전에 이 메서드로
+     * 먼저 지워야 FK 제약 위반 없이 삭제할 수 있다.
+     */
+    void deleteByUserId(Long userId);
 }
