@@ -24,3 +24,29 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+CREATE TABLE IF NOT EXISTS clubs (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    leader_name VARCHAR(50) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    member_count INTEGER NOT NULL DEFAULT 0,
+    thumbnail_url VARCHAR(500),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- club_members는 (club_id, user_id) 행의 존재 자체가 '가입했다'는 뜻이다. 별도의
+-- is_joined 컬럼은 없고, 가입한 동아리에 한해서만 의미가 있는 is_favorite만 저장한다.
+CREATE TABLE IF NOT EXISTS club_members (
+    id BIGSERIAL PRIMARY KEY,
+    club_id BIGINT NOT NULL REFERENCES clubs(id),
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_club_members_club_user UNIQUE (club_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_club_members_user_id ON club_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_club_members_club_id ON club_members(club_id);
