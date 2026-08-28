@@ -87,6 +87,35 @@ components:
           type: string
         studentId:
           type: string
+    Club:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        leaderName:
+          type: string
+        category:
+          type: string
+        memberCount:
+          type: integer
+        thumbnailUrl:
+          type: string
+          nullable: true
+        joined:
+          type: boolean
+          description: 로그인한 사용자가 이 동아리에 가입했는지 여부.
+        favorite:
+          type: boolean
+          description: 로그인한 사용자가 이 동아리를 즐겨찾기했는지 여부. joined가 false면 항상 false다.
+    SetClubFavoriteRequest:
+      type: object
+      required: [favorite]
+      properties:
+        favorite:
+          type: boolean
 paths:
   /health:
     get:
@@ -178,6 +207,145 @@ paths:
                     $ref: '#/components/schemas/ApiError'
         '503':
           description: 서버에 Firebase 자격 증명(FIREBASE_CREDENTIALS_PATH)이 아직 설정되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/me:
+    get:
+      summary: 내가 가입한 동아리 목록
+      operationId: getMyClubs
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Club'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs:
+    get:
+      summary: 전체 동아리 목록 (메인 페이지 홈 피드)
+      description: >-
+        로그인한 사용자 기준으로 각 동아리의 joined/favorite 여부를 함께 내려준다.
+      operationId: getAllClubs
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Club'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/favorite:
+    patch:
+      summary: 동아리 즐겨찾기 설정
+      description: 가입한 동아리에 대해서만 즐겨찾기를 설정할 수 있다.
+      operationId: setClubFavorite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetClubFavoriteRequest'
+      responses:
+        '200':
+          description: 변경 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Club'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리이거나(CLUB_NOT_FOUND), 가입하지 않은 동아리를 즐겨찾기하려 함(CLUB_MEMBERSHIP_NOT_FOUND)
           content:
             application/json:
               schema:
