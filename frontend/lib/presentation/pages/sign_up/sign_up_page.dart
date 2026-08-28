@@ -6,7 +6,8 @@ import '../../../core/network/api_exception.dart';
 import '../../../features/user/models/user_model.dart';
 import '../../providers/auth/auth_controller.dart';
 import '../../providers/di_providers.dart';
-import 'widgets/sign_up_text_field.dart';
+import '../../widgets/common/button/app_rounded_button.dart';
+import '../../widgets/common/input/app_text_field.dart';
 
 /// docs/API_CONTRACT.md의 '회원가입(추가 정보 입력)' 절, Figma 'moa ver 3.0'의
 /// '최초 접속자 추가 정보 입력 화면'(node-id 3018:204)을 참고했다.
@@ -156,35 +157,35 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SignUpTextField(
+              AppTextField(
                 label: '이름',
                 hintText: '이름을 입력해주세요',
                 icon: Icons.person_outline,
                 controller: _nameController,
                 errorText: _nameError,
               ),
-              SignUpTextField(
+              AppTextField(
                 label: '닉네임',
                 hintText: '닉네임을 입력해주세요',
                 icon: Icons.explore_outlined,
                 controller: _nicknameController,
                 errorText: _nicknameError,
               ),
-              SignUpTextField(
+              AppTextField(
                 label: '이메일',
                 hintText: '이메일을 입력해주세요',
                 icon: Icons.mail_outline,
                 controller: _emailController,
                 enabled: false,
               ),
-              SignUpTextField(
+              AppTextField(
                 label: '전공',
                 hintText: '전공을 입력해주세요',
                 icon: Icons.school_outlined,
                 controller: _majorController,
                 errorText: _majorError,
               ),
-              SignUpTextField(
+              AppTextField(
                 label: '학번',
                 hintText: '학번을 입력해주세요',
                 icon: Icons.menu_book_outlined,
@@ -197,25 +198,14 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                 errorText: _studentIdError,
               ),
               const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: FilledButton(
-                  onPressed: _isSubmitting ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF31C1FF),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text(
-                          '작성 완료',
-                          style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
-                        ),
+              AppRoundedButton(
+                onPressed: _submit,
+                isLoading: _isSubmitting,
+                backgroundColor: const Color(0xFF31C1FF),
+                foregroundColor: Colors.white,
+                child: const Text(
+                  '작성 완료',
+                  style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
