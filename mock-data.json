@@ -1,13 +1,36 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "users": [
     {
       "id": 1,
       "email": "user@moa.com",
       "name": "Test User",
-      "role": "USER"
+      "role": "USER",
+      "provider": "GOOGLE",
+      "providerUid": "mock-firebase-uid-1"
     }
   ],
+  "auth": {
+    "login": {
+      "request": {
+        "idToken": "mock-firebase-id-token"
+      },
+      "response": {
+        "success": true,
+        "data": {
+          "accessToken": "mock-jwt-access-token",
+          "expiresInSeconds": 86400,
+          "user": {
+            "id": 1,
+            "email": "user@moa.com",
+            "name": "Test User",
+            "role": "USER"
+          }
+        },
+        "error": null
+      }
+    }
+  },
   "health": {
     "status": "UP",
     "timestamp": "2026-08-28T10:00:00Z"

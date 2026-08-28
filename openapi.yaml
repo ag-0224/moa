@@ -6,6 +6,60 @@ info:
 servers:
   - url: http://localhost:8080/api/v1
     description: Local Development Server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: POST /auth/login 응답의 accessToken을 'Authorization: Bearer <token>'으로 전달한다.
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID_AUTH_TOKEN
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN]
+    LoginRequest:
+      type: object
+      required: [idToken]
+      properties:
+        idToken:
+          type: string
+          description: >-
+            클라이언트(Flutter)가 Firebase Authentication으로 구글/애플 로그인을 완료한 뒤
+            발급받는 Firebase ID Token.
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: 이후 요청의 Authorization 헤더에 사용할 MOA 자체 발급 JWT.
+        expiresInSeconds:
+          type: integer
+          format: int64
+        user:
+          $ref: '#/components/schemas/User'
 paths:
   /health:
     get:
@@ -25,3 +79,108 @@ paths:
                   timestamp:
                     type: string
                     example: "2026-08-28T10:00:00Z"
+  /auth/login:
+    post:
+      summary: 구글/애플(Firebase) 로그인
+      description: >-
+        Firebase ID Token을 검증하고, 최초 로그인이면 사용자를 생성한 뒤 MOA 자체 액세스 토큰을 발급한다.
+        이메일/비밀번호 로그인은 지원하지 않는다.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 로그인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/LoginResponse'
+                  error:
+                    nullable: true
+        '400':
+          description: 요청 값이 올바르지 않음 (idToken 누락 등)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Firebase ID 토큰 검증 실패
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '503':
+          description: 서버에 Firebase 자격 증명(FIREBASE_CREDENTIALS_PATH)이 아직 설정되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /users/me:
+    get:
+      summary: 내 정보 조회
+      operationId: getMyInfo
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/User'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음 (Authorization 헤더 누락/만료/위조된 토큰)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
