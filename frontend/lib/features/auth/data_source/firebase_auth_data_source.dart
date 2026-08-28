@@ -35,7 +35,11 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
   @override
   Future<UserCredential> signInWithGoogle() async {
     try {
-      final googleUser = await GoogleSignIn().signIn();
+      final googleSignIn = GoogleSignIn(
+        clientId: '535931109546-sakkm84ocovltm89r59a3slt8emghj7c.apps.googleusercontent.com',
+        scopes: const ['email', 'profile'],
+      );
+      final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         throw Exception('구글 로그인이 취소되었습니다.');
       }
