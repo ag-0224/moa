@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1084295837261",
-    "project_id": "moa-app-2026",
-    "storage_bucket": "moa-app-2026.appspot.com"
+    "project_number": "535931109546",
+    "project_id": "moa-app-2026-dev",
+    "storage_bucket": "moa-app-2026-dev.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1084295837261:android:moa2026appbundleid001",
+        "mobilesdk_app_id": "1:535931109546:android:3ac6ebdfbcb4585d7790d3",
         "android_client_info": {
           "package_name": "com.moa.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyMOA_APP_2026_FIREBASE_API_KEY_VAL"
+          "current_key": "AIzaSyC5BKGsh5xR03tyJ6SteeTxY0XM3vXMyQ8"
         }
       ],
       "services": {
