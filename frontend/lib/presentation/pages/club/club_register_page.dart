@@ -16,8 +16,15 @@ import '../../widgets/common/input/app_text_field.dart';
 /// 가운데 정렬 타이틀), 둥근 모서리(16) 입력창(평소 회색 테두리 / 포커스 시
 /// 파란 테두리 / 에러 시 빨간 테두리), 파란 배경의 큰 CTA 버튼.
 ///
+/// "작성완료" 버튼 위치도 club_apply_page.dart의 "지원서 제출" 버튼과 똑같은
+/// 자리에 오도록, 레이아웃 구조 자체를 그대로 따라 했다 — 스크롤 뷰 없이
+/// Column + Expanded(설명 입력창)로 남는 세로 공간을 전부 채우고, 그 아래
+/// (에러 텍스트 → SizedBox 20 → 버튼 → SizedBox 24 → 로딩 자리 → SizedBox 16)
+/// 순서의 '바닥 여백 구성'을 apply 화면과 완전히 동일한 값으로 맞췄다. 이
+/// 구조 덕분에 버튼과 화면 하단 사이 거리가 두 화면에서 픽셀 단위로 같다.
+///
 /// 백엔드는 이 "스터디"를 별도 도메인이 아니라 기존 Club 엔티티로 그대로
-/// 저장한다 - 이 앱에는서 동을리/스터디/팀이 같은 개념이다(UI 문구만
+/// 저장한다 — 이 앱에서는 동아리/스터디/팀이 전부 같은 개념이다(UI 문구만
 /// 화면마다 다르게 쓰인다). 성공하면 true를 pop해서 home_page.dart가
 /// 목록(myClubsProvider/allClubsProvider)을 새로고침하게 한다.
 class ClubRegisterPage extends ConsumerStatefulWidget {
@@ -114,14 +121,20 @@ class _ClubRegisterPageState extends ConsumerState<ClubRegisterPage> {
           style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600),
         ),
       ),
+      // club_apply_page.dart와 완전히 같은 구조: 스크롤 없는 Padding(가로 32만) +
+      // Column. 설명 입력창을 Expanded로 감싸 남는 세로 공간을 전부 채우고,
+      // 그 아래 버튼까지의 여백 구성(SizedBox 20/24/16 + 로딩 자리)을 apply
+      // 화면과 값 하나하나 동일하게 맞춰서, 버튼이 화면 하단으로부터 같은
+      // 거리에 오게 했다.
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 12),
               Center(child: _ThumbnailPicker(image: _thumbnail, onTap: _pickThumbnail)),
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
               AppTextField(
                 label: '스터디 이름',
                 hintText: '스터디 이름을 입력해주세요',
@@ -134,8 +147,7 @@ class _ClubRegisterPageState extends ConsumerState<ClubRegisterPage> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _borderColor),
               ),
               const SizedBox(height: 8),
-              SizedBox(
-                height: 160,
+              Expanded(
                 child: TextField(
                   controller: _descriptionController,
                   maxLines: null,
@@ -167,7 +179,7 @@ class _ClubRegisterPageState extends ConsumerState<ClubRegisterPage> {
                 const SizedBox(height: 8),
                 Text(_descriptionError!, style: const TextStyle(fontSize: 14, color: Colors.red)),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               AppRoundedButton(
                 onPressed: _submit,
                 isLoading: _isSubmitting,
@@ -178,6 +190,20 @@ class _ClubRegisterPageState extends ConsumerState<ClubRegisterPage> {
                   style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
                 ),
               ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 24,
+                child: _isSubmitting
+                    ? const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -195,7 +221,7 @@ class _ThumbnailPicker extends StatelessWidget {
   final VoidCallback onTap;
 
   static const Color _borderColor = Color(0xFF8B8B8B);
-  static const double _size = 120;
+  static const double _size = 88;
 
   @override
   Widget build(BuildContext context) {
@@ -215,9 +241,9 @@ class _ThumbnailPicker extends StatelessWidget {
             : const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add_a_photo_outlined, color: _borderColor, size: 28),
-                  SizedBox(height: 6),
-                  Text('사진 등록', style: TextStyle(fontSize: 12, color: _borderColor)),
+                  Icon(Icons.add_a_photo_outlined, color: _borderColor, size: 24),
+                  SizedBox(height: 4),
+                  Text('사진 등록', style: TextStyle(fontSize: 11, color: _borderColor)),
                 ],
               ),
       ),
