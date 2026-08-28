@@ -24,7 +24,8 @@ public class WebSecurityConfig {
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/health",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/h2-console/**"
     };
 
     @Bean
@@ -35,7 +36,11 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
-                );
+                )
+                // H2 콘솔(local 프로필 전용)은 내부적으로 HTML frame을 사용하므로
+                // 동일 출처 프레임을 허용한다. local 프로필에서만 실제로 등록되는
+                // 엔드포인트라 다른 프로필에는 영향이 없다.
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
         return http.build();
     }
 
