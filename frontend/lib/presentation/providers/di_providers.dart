@@ -15,6 +15,7 @@ import '../../features/club/models/club_model.dart';
 import '../../features/club/repositories/club_repository.dart';
 import '../../features/club/repositories/club_repository_impl.dart';
 import '../../features/club/usecases/apply_to_club_use_case.dart';
+import '../../features/club/usecases/create_club_use_case.dart';
 import '../../features/club/usecases/get_all_clubs_use_case.dart';
 import '../../features/club/usecases/get_club_detail_use_case.dart';
 import '../../features/club/usecases/get_my_clubs_use_case.dart';
@@ -106,6 +107,10 @@ final getClubDetailUseCaseProvider =
 
 final applyToClubUseCaseProvider =
     Provider((ref) => ApplyToClubUseCase(ref.watch(clubRepositoryProvider)));
+
+/// 메인 페이지 "스터디 등록" 버튼 → 등록 화면(ClubRegisterPage)이 쓰는 유스케이스.
+final createClubUseCaseProvider =
+    Provider((ref) => CreateClubUseCase(ref.watch(clubRepositoryProvider)));
 
 /// 메인 페이지(홈 피드)가 watch하는 "내가 속한(가입한) 동아리 목록".
 final myClubsProvider = FutureProvider<List<ClubModel>>((ref) {

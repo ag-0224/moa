@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../data_source/club_data_source.dart';
 import '../models/club_detail_model.dart';
 import '../models/club_model.dart';
@@ -23,4 +25,12 @@ final class ClubRepositoryImpl implements ClubRepository {
   @override
   Future<ClubDetailModel> applyToClub(int clubId, String selfIntroduction) =>
       _clubDataSource.applyToClub(clubId, selfIntroduction);
+
+  @override
+  Future<ClubDetailModel> createClub({
+    required String name,
+    required String description,
+    File? thumbnail,
+  }) =>
+      _clubDataSource.createClub(name: name, description: description, thumbnail: thumbnail);
 }

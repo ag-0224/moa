@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// "팀 등록하기" 플로팅 버튼. 처음에는 아이콘+글자가 있는 알약(pill) 모양이다가,
+/// "스터디 등록" 플로팅 버튼. 처음에는 아이콘+글자가 있는 알약(pill) 모양이다가,
 /// 스크롤을 내리면 원형 아이콘 버튼으로 자연스럽게 줄어든다.
+///
+/// 그림자(Material.elevation)는 의도적으로 없앴다 — 버튼 아래에 그림자가
+/// 지지 않고 배경 색만으로 떠 보이는 평평한(flat) 스타일로 만들어달라는
+/// 요청에 따른 것.
 ///
 /// Figma(node-id 3073-49)의 플로팅 버튼 프레임(3094:1364) 바로 옆에, 같은
 /// y좌표에 딱 버튼 오른쪽 끝과 맞닿은 작은 원(Ellipse 1)이 겹쳐 있었는데, 이건
@@ -59,7 +63,7 @@ class _TeamRegisterButtonState extends State<TeamRegisterButton> {
       height: _circleSize,
       child: Material(
         color: _brandColor,
-        elevation: 4,
+        elevation: 0,
         shape: _collapsed
             ? const CircleBorder()
             : RoundedRectangleBorder(borderRadius: BorderRadius.circular(_circleSize / 2)),
@@ -84,7 +88,7 @@ class _TeamRegisterButtonState extends State<TeamRegisterButton> {
                     child: const Padding(
                       padding: EdgeInsets.only(left: 6),
                       child: Text(
-                        '팀 등록하기',
+                        '스터디 등록',
                         maxLines: 1,
                         softWrap: false,
                         overflow: TextOverflow.clip,

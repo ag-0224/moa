@@ -3,6 +3,11 @@ spring:
     name: moa-backend
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+  # "스터디 등록" 화면의 사진 업로드(ClubController#createClub) 요청 크기 제한.
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
 
 server:
   port: ${SERVER_PORT:8080}
@@ -10,6 +15,13 @@ server:
 jwt:
   secret: ${JWT_SECRET:moa_dev_secret_jwt_key_super_secure_2026_default_local_key}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+app:
+  # FileStorageService가 업로드된 파일(스터디 사진 등)을 저장하는 로컬 디스크 경로.
+  # 상대 경로면 서버 프로세스의 실행 디렉터리 기준이다. 여러 인스턴스로 배포하게
+  # 되면 이 로컬 디스크 방식은 더 이상 맞지 않으므로 S3 등으로 옮겨야 한다.
+  upload:
+    dir: ${APP_UPLOAD_DIR:uploads}
 
 ---
 spring:

@@ -130,3 +130,24 @@ INSERT 스니펫을 본인의 `user_id`에 맞게 고쳐서 H2 콘솔(`/h2-conso
 미리 준비해둔 자리로, 지금은 어디서도 호출되지 않는다. 즉 현재 시점에서는
 신청을 넣어도 실제로 가입 상태(`joined: true`)가 되지는 않으며, 상태 값이
 `PENDING`으로 남아있는 것까지만 확인할 수 있다.
+
+### 스터디 등록 (동아리 생성)
+
+메인 페이지의 "스터디 등록" 플로팅 버튼 → 등록 화면의 "작성완료" 제출이
+호출하는 API다.
+
+- `POST /clubs` (multipart/form-data) — 필드: `name`(필수, 100자 이하),
+  `description`(필수), `thumbnail`(선택, 이미지 파일). JSON이 아니라
+  multipart인 이유는 사진 파일을 같이 받기 위해서다.
+  - 성공하면 만든 사용자가 곧바로 그 스터디의 회장 겸 첫 멤버가 되어
+    `joined: true`인 `ClubDetail`을 응답한다(`club_members` 행이 즉시 생성됨
+    — 가입 신청/승인 절차 없음).
+  - `name`이 비어있거나 100자를 넘으면 `400 INVALID_CLUB_NAME`.
+  - 이미 존재하는 이름이면 `409 DUPLICATE_CLUB_NAME`.
+  - 등록 화면에는 카테고리 선택 UI가 없어서, 새로 만들어지는 동아리의
+    `category`는 서버가 `"스터디"` 고정값으로 채운다(`ClubService.DEFAULT_CATEGORY`).
+    카테고리별 분류가 필요해지면 그때 선택 UI와 함께 재검토한다.
+  - 업로드된 사진은 로컬 디스크(`app.upload.dir`, 기본값 `uploads/clubs/`)에
+    저장되고, `/uploads/clubs/{파일명}` 경로로 정적 서빙된다(인증 불필요 —
+    `Image.network`가 토큰을 붙이지 않으므로). 여러 인스턴스로 배포하게 되면
+    이 로컬 디스크 방식은 S3 등으로 옮겨야 한다.

@@ -7,6 +7,7 @@ import '../../providers/home/main_tab_provider.dart';
 import '../../widgets/common/navigation/app_bottom_nav_bar.dart';
 import '../club/club_detail_page.dart';
 import '../club/club_home_placeholder_page.dart';
+import '../club/club_register_page.dart';
 import '../my_page/my_page_tab.dart';
 import 'widgets/club_list_item.dart';
 import 'widgets/club_section_header.dart';
@@ -169,9 +170,8 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
             child: TeamRegisterButton(
               scrollController: _scrollController,
               onPressed: () {
-                // TODO: 팀(동아리) 등록 화면 연결. 이번 작업 범위는 메인 페이지 UI까지다.
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('팀 등록 화면은 아직 준비중이에요.')),
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ClubRegisterPage()),
                 );
               },
             ),
