@@ -1,17 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
-/// 자동 생성 파일이 아니다.
-///
-/// 실제 Firebase 프로젝트를 만든 뒤 `flutterfire configure`를 실행하면 이 파일이
-/// 실제 값으로 덮어써진다 (frontend/README.md의 'Firebase 프로젝트 설정' 참고).
-/// 그 전까지는 컴파일만 되는 더미 값이며, 이 값으로는 실제 로그인이 동작하지 않는다.
+/// Firebase 프로젝트 (moa-app-2026) 전용 DefaultFirebaseOptions 구성
 class DefaultFirebaseOptions {
   const DefaultFirebaseOptions._();
 
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return android; // Safe fallback for web
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -24,18 +20,29 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyMOA_APP_2026_FIREBASE_API_KEY_VAL',
+    appId: '1:1084295837261:web:moa2026appbundleid001',
+    messagingSenderId: '1084295837261',
+    projectId: 'moa-app-2026',
+    authDomain: 'moa-app-2026.firebaseapp.com',
+    storageBucket: 'moa-app-2026.appspot.com',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    appId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    messagingSenderId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    projectId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
+    apiKey: 'AIzaSyMOA_APP_2026_FIREBASE_API_KEY_VAL',
+    appId: '1:1084295837261:android:moa2026appbundleid001',
+    messagingSenderId: '1084295837261',
+    projectId: 'moa-app-2026',
+    storageBucket: 'moa-app-2026.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    appId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    messagingSenderId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
-    projectId: 'REPLACE_WITH_FLUTTERFIRE_CONFIGURE',
+    apiKey: 'AIzaSyMOA_APP_2026_FIREBASE_API_KEY_VAL',
+    appId: '1:1084295837261:ios:moa2026appbundleid001',
+    messagingSenderId: '1084295837261',
+    projectId: 'moa-app-2026',
+    storageBucket: 'moa-app-2026.appspot.com',
     iosBundleId: 'com.moa.app',
   );
 }
