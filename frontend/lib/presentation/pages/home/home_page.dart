@@ -28,6 +28,7 @@ class HomePage extends ConsumerWidget {
     final currentTab = ref.watch(mainTabProvider);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       body: IndexedStack(
         index: currentTab.index,
         children: const [
@@ -41,7 +42,7 @@ class HomePage extends ConsumerWidget {
         onTap: (index) => ref.read(mainTabProvider.notifier).state = MainTab.values[index],
         items: [
           for (final tab in MainTab.values)
-            AppBottomNavBarItem(icon: tab.icon, label: tab.label),
+            AppBottomNavBarItem(iconAsset: tab.iconAsset, label: tab.label),
         ],
       ),
     );
@@ -167,6 +168,7 @@ class _MyPageTab extends ConsumerWidget {
     final user = authState is AuthAuthenticated ? authState.user : null;
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('마이페이지'),
         actions: [
