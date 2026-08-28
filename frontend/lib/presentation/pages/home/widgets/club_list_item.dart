@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/assets.dart';
 import '../../../../features/club/models/club_model.dart';
 
-/// 동아리 목록의 한 행(썸네일 + 이름 + 카테고리 · 인원수).
+/// 동아리 목록의 한 행(썸네일 + 이름 + 대표 이름 + 카테고리 · 인원수).
 ///
 /// - thumbnailUrl이 없으면(동아리 사진 미등록) Assets.clubDefaultThumbnail
 ///   기본 이미지를 대신 보여준다.
+/// - 이름 아래에 대표(leaderName) 이름을 한 줄 추가로 보여준다(더미데이터에는
+///   전부 "박승찬"으로 채워져 있음, club_mock_data_source.dart 참고).
 /// - 꾹 누르면(long press) onLongPress로 누른 화면 좌표(글로벌 좌표)를
 ///   넘긴다 — 즐겨찾기 추가/삭제 팝업(favorite_action_sheet.dart)을 그
 ///   위치 근처에 띄우는 데 쓴다.
@@ -48,6 +50,12 @@ class ClubListItem extends StatelessWidget {
                     Text(
                       club.name,
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.black),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      club.leaderName,
+                      style: const TextStyle(fontSize: 13, color: _grayText),
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),

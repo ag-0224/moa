@@ -9,11 +9,31 @@ import '../models/club_model.dart';
 /// 하나만 걷어내면 되도록 인터페이스를 분리해뒀다.
 final class ClubMockDataSourceImpl implements ClubDataSource {
   final List<ClubModel> _clubs = [
-    const ClubModel(id: 1, name: '알고리즘 스터디', category: '학술', memberCount: 24, isFavorite: true),
-    const ClubModel(id: 2, name: '사진 동아리 셔터', category: '취미', memberCount: 18, isFavorite: true),
-    const ClubModel(id: 3, name: '농구 동아리', category: '체육', memberCount: 32),
-    const ClubModel(id: 4, name: '창업 연합회', category: '학술', memberCount: 15),
-    const ClubModel(id: 5, name: '밴드 동아리 사운드', category: '문화예술', memberCount: 21),
+    const ClubModel(
+      id: 1,
+      name: '알고리즘 스터디',
+      leaderName: '박승찬',
+      category: '학술',
+      memberCount: 24,
+      isFavorite: true,
+    ),
+    const ClubModel(
+      id: 2,
+      name: '사진 동아리 셔터',
+      leaderName: '박승찬',
+      category: '취미',
+      memberCount: 18,
+      isFavorite: true,
+    ),
+    const ClubModel(id: 3, name: '농구 동아리', leaderName: '박승찬', category: '체육', memberCount: 32),
+    const ClubModel(id: 4, name: '창업 연합회', leaderName: '박승찬', category: '학술', memberCount: 15),
+    const ClubModel(
+      id: 5,
+      name: '밴드 동아리 사운드',
+      leaderName: '박승찬',
+      category: '문화예술',
+      memberCount: 21,
+    ),
   ];
 
   @override
