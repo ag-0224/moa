@@ -7,10 +7,12 @@ import '../../../features/auth/usecases/sign_out_use_case.dart';
 import '../../../features/user/models/user_model.dart';
 import '../../../features/user/usecases/get_my_info_use_case.dart';
 import '../di_providers.dart';
+import '../home/main_tab_provider.dart';
 import 'auth_state.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
   return AuthController(
+    ref,
     ref.watch(signInUseCaseProvider),
     ref.watch(signOutUseCaseProvider),
     ref.watch(getMyInfoUseCaseProvider),
@@ -20,14 +22,20 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
 /// 앱 전역 로그인 상태. 시작 시 저장된 토큰으로 GET /users/me를 호출해
 /// 세션이 아직 유효한지 확인한다(자동 로그인).
 class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._signInUseCase, this._signOutUseCase, this._getMyInfoUseCase)
+  AuthController(this._ref, this._signInUseCase, this._signOutUseCase, this._getMyInfoUseCase)
       : super(const AuthInitial()) {
     _restoreSession();
   }
 
+  final Ref _ref;
   final SignInUseCase _signInUseCase;
   final SignOutUseCase _signOutUseCase;
   final GetMyInfoUseCase _getMyInfoUseCase;
+
+  void _resetHomeTab() {
+    _ref.read(mainTabProvider.notifier).state = MainTab.home;
+    _ref.read(isClubSearchingProvider.notifier).state = false;
+  }
 
   Future<void> _restoreSession() async {
     final result = await _getMyInfoUseCase();
@@ -41,7 +49,10 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthLoading();
     final result = await _signInUseCase(provider);
     result.when(
-      success: (user) => state = _stateFor(user),
+      success: (user) {
+        _resetHomeTab();
+        state = _stateFor(user);
+      },
       failure: (error) => state = AuthError(_messageOf(error)),
     );
   }
@@ -59,6 +70,7 @@ class AuthController extends StateNotifier<AuthState> {
   /// 필드 아래에 표시), 전역 AuthState를 AuthError로 바꾸면 app.dart가 곧바로
   /// SignInPage로 화면을 튕겨버려 사용자가 입력하던 내용을 잃게 된다.
   void markProfileCompleted(UserModel user) {
+    _resetHomeTab();
     state = AuthAuthenticated(user);
   }
 
@@ -66,7 +78,10 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthLoading();
     final result = await _signOutUseCase();
     result.when(
-      success: (_) => state = const AuthUnauthenticated(),
+      success: (_) {
+        _resetHomeTab();
+        state = const AuthUnauthenticated();
+      },
       failure: (error) => state = AuthError(_messageOf(error)),
     );
   }

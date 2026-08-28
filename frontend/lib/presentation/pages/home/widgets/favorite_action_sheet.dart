@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 /// (null 반환).
 Future<bool?> showFavoriteActionSheet({
   required BuildContext context,
-  required Offset anchor,
+  Offset? anchor,
   required bool isFavorite,
 }) {
   return showGeneralDialog<bool>(
@@ -17,25 +17,16 @@ Future<bool?> showFavoriteActionSheet({
     barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 150),
     pageBuilder: (context, animation, secondaryAnimation) {
-      const pillHeight = 52.0;
       const horizontalMargin = 24.0;
-      final mediaQuery = MediaQuery.of(context);
-      final minTop = mediaQuery.padding.top + 8;
-      final maxTop = mediaQuery.size.height - mediaQuery.padding.bottom - pillHeight - 8;
-      final top = (anchor.dy - pillHeight / 2).clamp(minTop, maxTop);
 
-      return Stack(
-        children: [
-          Positioned(
-            left: horizontalMargin,
-            right: horizontalMargin,
-            top: top,
-            child: _FavoriteActionPill(
-              isFavorite: isFavorite,
-              onTap: () => Navigator.of(context).pop(true),
-            ),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: horizontalMargin),
+          child: _FavoriteActionPill(
+            isFavorite: isFavorite,
+            onTap: () => Navigator.of(context).pop(true),
           ),
-        ],
+        ),
       );
     },
     transitionBuilder: (context, animation, secondaryAnimation, child) {

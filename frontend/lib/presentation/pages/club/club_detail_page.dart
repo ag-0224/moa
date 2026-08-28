@@ -24,17 +24,13 @@ class ClubDetailPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        top: false,
-        bottom: false,
-        child: detailAsync.when(
-          data: (club) => _ClubDetailView(club: club, clubId: clubId),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text('동아리 정보를 불러오지 못했어요: $error', textAlign: TextAlign.center),
-            ),
+      body: detailAsync.when(
+        data: (club) => _ClubDetailView(club: club, clubId: clubId),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text('동아리 정보를 불러오지 못했어요: $error', textAlign: TextAlign.center),
           ),
         ),
       ),
@@ -64,24 +60,27 @@ class _ClubDetailView extends StatelessWidget {
               club.thumbnailUrl != null
                   ? Image.network(club.thumbnailUrl!, fit: BoxFit.cover)
                   : Image.asset(Assets.clubDefaultThumbnail, fit: BoxFit.cover),
-              SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _CircleIconButton(
-                        icon: Icons.arrow_back,
-                        onTap: () => Navigator.of(context).maybePop(),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SizedBox(
+                  height: 100,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            _CircleIconButton(
+                              icon: Icons.arrow_back,
+                              onTap: () => Navigator.of(context).maybePop(),
+                            ),
+                          ],
+                        ),
                       ),
-                      _CircleIconButton(
-                        icon: Icons.share,
-                        onTap: () {
-                          // TODO: 공유 기능. 이번 작업 범위는 소개/지원 화면까지다.
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -89,46 +88,60 @@ class _ClubDetailView extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Padding(
-            // 회원가입 화면(sign_up_page.dart)과 같은 좌우 32/하단 32 여백을 써서
-            // "지원 하기" 버튼의 위치·여백이 그 화면의 '작성 완료' 버튼과 같아지도록 맞췄다.
-            padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          club.name,
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.black),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            // TODO: majesticons 왕관 아이콘 에셋이 추가되면 이 Material
-                            // 아이콘을 그걸로 교체한다(다른 하단 탭 아이콘들과 같은 패턴).
-                            const Icon(Icons.emoji_events, size: 18, color: _grayText),
-                            const SizedBox(width: 6),
-                            Text(club.leaderName, style: const TextStyle(fontSize: 15, color: _grayText)),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Divider(color: Color(0xFFE5E5EA), height: 1),
-                        const SizedBox(height: 20),
-                        Text(
-                          club.description?.isNotEmpty == true ? club.description! : '아직 등록된 소개 글이 없어요.',
-                          style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.5),
-                        ),
-                      ],
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              // 로그인 화면(sign_in_page.dart)의 구글 로그인 버튼과 동일한 위치/여백(SafeArea + horizontal: 32 + bottom: 64)을 갖도록 맞췄다.
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            club.name,
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.black),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              // TODO: majesticons 왕관 아이콘 에셋이 추가되면 이 Material
+                              // 아이콘을 그걸로 교체한다(다른 하단 탭 아이콘들과 같은 패턴).
+                              const Icon(Icons.emoji_events, size: 24, color: _grayText),
+                              const SizedBox(width: 6),
+                              Text(
+                                club.leaderName,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _grayText),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(color: Color(0xFFE5E5EA), height: 1),
+                          const SizedBox(height: 20),
+                          Text(
+                            club.description?.isNotEmpty == true ? club.description! : '아직 등록된 소개 글이 없어요.',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: _grayText,
+                              height: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                _ApplyButton(club: club, clubId: clubId),
-              ],
+                  const SizedBox(height: 20),
+                  _ApplyButton(club: club, clubId: clubId),
+                  const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           ),
         ),
@@ -151,7 +164,7 @@ class _CircleIconButton extends StatelessWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(color: Colors.black.withOpacity(0.35), shape: BoxShape.circle),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.35), shape: BoxShape.circle),
         child: Icon(icon, color: Colors.white, size: 20),
       ),
     );

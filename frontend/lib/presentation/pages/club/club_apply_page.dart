@@ -66,16 +66,25 @@ class _ClubApplyPageState extends ConsumerState<ClubApplyPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
-        foregroundColor: Colors.black,
-        title: Text('${widget.clubName} 지원하기'),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: Text(
+          widget.clubName,
+          style: const TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600),
+        ),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 12),
               const Text(
                 '자기소개',
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _borderColor),
@@ -119,8 +128,25 @@ class _ClubApplyPageState extends ConsumerState<ClubApplyPage> {
                 isLoading: _isSubmitting,
                 backgroundColor: _blue,
                 foregroundColor: Colors.white,
-                child: const Text('지원서 제출', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: const Text(
+                  '지원서 제출',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: -0.4),
+                ),
               ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 24,
+                child: _isSubmitting
+                    ? const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
