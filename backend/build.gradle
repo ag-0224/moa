@@ -27,8 +27,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 
-    // Security & JWT (baseline only; 로그인 계약 확정 후 config/jwt에서 사용)
+    // Security & JWT
+    // Firebase Admin SDK: 클라이언트(Flutter, Firebase Auth)가 구글/애플 로그인 후 발급받은
+    // ID Token을 서버에서 검증하는 데 사용한다 (POST /auth/login).
+    implementation 'com.google.firebase:firebase-admin:9.3.0'
     implementation 'org.springframework.boot:spring-boot-starter-security'
+    // 로그인(POST /auth/login) 성공 후 발급되는 MOA 자체 액세스 토큰
     implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
