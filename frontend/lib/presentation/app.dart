@@ -18,7 +18,7 @@ class MoaApp extends ConsumerWidget {
     return MaterialApp(
       title: 'MOA',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo, scaffoldBackgroundColor: Colors.white),
       home: switch (authState) {
         AuthInitial() || AuthLoading() => const SplashPage(),
         AuthAuthenticated() => const HomePage(),

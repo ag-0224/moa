@@ -87,6 +87,60 @@ components:
           type: string
         studentId:
           type: string
+    Club:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        leaderName:
+          type: string
+        category:
+          type: string
+        memberCount:
+          type: integer
+        thumbnailUrl:
+          type: string
+          nullable: true
+        joined:
+          type: boolean
+          description: 로그인한 사용자가 이 동아리에 가입했는지 여부.
+        favorite:
+          type: boolean
+          description: 로그인한 사용자가 이 동아리를 즐겨찾기했는지 여부. joined가 false면 항상 false다.
+    SetClubFavoriteRequest:
+      type: object
+      required: [favorite]
+      properties:
+        favorite:
+          type: boolean
+    ClubDetail:
+      allOf:
+        - $ref: '#/components/schemas/Club'
+        - type: object
+          properties:
+            description:
+              type: string
+              nullable: true
+              description: 가입 전 소개(동아리 상세 화면)에만 노출되는 소개 글.
+            applicationStatus:
+              type: string
+              enum: [PENDING, REJECTED]
+              nullable: true
+              description: >-
+                joined가 true면 항상 null이다. joined가 false일 때만
+                null(아직 신청 안 함)/PENDING(승인 대기)/REJECTED(거절됨,
+                재신청 가능) 중 하나가 온다.
+    ApplyClubRequest:
+      type: object
+      required: [selfIntroduction]
+      properties:
+        selfIntroduction:
+          type: string
+          minLength: 20
+          maxLength: 1000
 paths:
   /health:
     get:
@@ -178,6 +232,296 @@ paths:
                     $ref: '#/components/schemas/ApiError'
         '503':
           description: 서버에 Firebase 자격 증명(FIREBASE_CREDENTIALS_PATH)이 아직 설정되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/me:
+    get:
+      summary: 내가 가입한 동아리 목록
+      operationId: getMyClubs
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Club'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs:
+    get:
+      summary: 전체 동아리 목록 (메인 페이지 홈 피드)
+      description: >-
+        로그인한 사용자 기준으로 각 동아리의 joined/favorite 여부를 함께 내려준다.
+      operationId: getAllClubs
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Club'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/favorite:
+    patch:
+      summary: 동아리 즐겨찾기 설정
+      description: 가입한 동아리에 대해서만 즐겨찾기를 설정할 수 있다.
+      operationId: setClubFavorite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetClubFavoriteRequest'
+      responses:
+        '200':
+          description: 변경 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Club'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리이거나(CLUB_NOT_FOUND), 가입하지 않은 동아리를 즐겨찾기하려 함(CLUB_MEMBERSHIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}:
+    get:
+      summary: 동아리 상세(가입 전 소개/지원) 조회
+      operationId: getClubDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ClubDetail'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/apply:
+    post:
+      summary: 동아리 가입 신청 ('지원 하기')
+      description: >-
+        가입하지 않은 동아리에 자기소개와 함께 가입을 신청한다. 신청은 PENDING
+        상태로 생성되며, 동아리장 승인/거절 기능은 아직 없다(이번 범위 밖).
+        REJECTED 상태의 기존 신청서가 있으면 재신청으로 처리되어 같은 신청서가
+        새 자기소개로 갱신되고 다시 PENDING이 된다.
+      operationId: applyToClub
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyClubRequest'
+      responses:
+        '200':
+          description: 신청 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ClubDetail'
+                  error:
+                    nullable: true
+        '400':
+          description: 요청 값이 올바르지 않음 (자기소개 누락/길이 미달)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 이미 가입함(CLUB_ALREADY_JOINED) 또는 이미 승인 대기 중인 신청서가 있음(CLUB_APPLICATION_ALREADY_PENDING)
           content:
             application/json:
               schema:
