@@ -44,3 +44,6 @@ Firebase Authentication(`firebase_auth` + `google_sign_in` / `sign_in_with_apple
 서버에 Firebase 자격 증명(`FIREBASE_CREDENTIALS_PATH`)이 설정되지 않은 환경에서는
 `POST /auth/login`이 `503 FIREBASE_NOT_CONFIGURED`를 반환한다. Firebase 프로젝트 생성 및
 서비스 계정 키 발급 방법은 [`backend/README.md`](../backend/README.md)를 참고한다.
+
+이미 다른 로그인 제공자(Provider)로 가입된 이메일로 로그인을 시도하면(예: 구글로 가입한
+이메일과 같은 이메일로 애플 로그인 시도) `POST /auth/login`이 `409 DUPLICATE_EMAIL`을 반환한다.
