@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Figma '최초 접속자 추가 정보 입력 화면'(node-id 3018:204)의 입력 필드.
 /// TechTalk의 UnderValidateTextField(presentation/widgets/common/input/)와 같은
@@ -15,6 +16,7 @@ class SignUpTextField extends StatelessWidget {
     this.errorText,
     this.enabled = true,
     this.keyboardType,
+    this.inputFormatters,
   });
 
   final String label;
@@ -24,6 +26,7 @@ class SignUpTextField extends StatelessWidget {
   final String? errorText;
   final bool enabled;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
 
   static const _borderColor = Color(0xFF8B8B8B);
   static const _hintColor = Color(0xFF8B8B8B);
@@ -44,6 +47,7 @@ class SignUpTextField extends StatelessWidget {
             controller: controller,
             enabled: enabled,
             keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
             style: const TextStyle(fontSize: 14, color: Colors.black),
             decoration: InputDecoration(
               hintText: hintText,

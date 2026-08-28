@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
@@ -73,7 +74,7 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
       _nameError = name.isEmpty ? '이름은 필수 입력 사항이에요.' : null;
       _nicknameError = nickname.isEmpty ? '닉네임은 필수 입력 사항이에요.' : null;
       _majorError = major.isEmpty ? '전공은 필수 입력 사항이에요.' : null;
-      _studentIdError = studentId.isEmpty ? '학번은 필수 입력 사항이에요.' : null;
+      _studentIdError = _validateStudentId(studentId);
     });
 
     if (_nameError != null || _nicknameError != null || _majorError != null || _studentIdError != null) {
@@ -111,6 +112,18 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
         });
       },
     );
+  }
+
+  static final _digitsOnly = RegExp(r'^[0-9]+$');
+
+  String? _validateStudentId(String studentId) {
+    if (studentId.isEmpty) {
+      return '학번은 필수 입력 사항이에요.';
+    }
+    if (!_digitsOnly.hasMatch(studentId)) {
+      return '학번은 숫자만 입력할 수 있어요.';
+    }
+    return null;
   }
 
   @override
@@ -172,7 +185,11 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
                 hintText: '학번을 입력해주세요',
                 icon: Icons.menu_book_outlined,
                 controller: _studentIdController,
-                keyboardType: TextInputType.text,
+                // Figma(node-id 3018:258)에는 형식 검증 문구가 따로 없지만, 학번은
+                // 숫자로만 구성되므로 키보드 단계에서부터 숫자만 입력되게 막고,
+                // 제출 시에도 한 번 더 검증한다(붙여넣기 등으로 우회하는 경우 대비).
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 errorText: _studentIdError,
               ),
               const SizedBox(height: 8),
