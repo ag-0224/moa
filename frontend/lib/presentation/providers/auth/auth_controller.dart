@@ -42,20 +42,28 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> signIn(AuthProviderType provider) async {
     state = const AuthLoading();
-    final result = await _signInUseCase(provider);
-    result.when(
-      success: (user) => state = AuthAuthenticated(user),
-      failure: (error) => state = AuthError(_messageOf(error)),
-    );
+    try {
+      final result = await _signInUseCase(provider);
+      result.when(
+        success: (user) => state = AuthAuthenticated(user),
+        failure: (error) => state = AuthError(_messageOf(error)),
+      );
+    } catch (error) {
+      state = AuthError(_messageOf(error));
+    }
   }
 
   Future<void> signOut() async {
     state = const AuthLoading();
-    final result = await _signOutUseCase();
-    result.when(
-      success: (_) => state = const AuthUnauthenticated(),
-      failure: (error) => state = AuthError(_messageOf(error)),
-    );
+    try {
+      final result = await _signOutUseCase();
+      result.when(
+        success: (_) => state = const AuthUnauthenticated(),
+        failure: (error) => state = AuthError(_messageOf(error)),
+      );
+    } catch (error) {
+      state = AuthError(_messageOf(error));
+    }
   }
 
   String _messageOf(Object error) {

@@ -34,40 +34,50 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
 
   @override
   Future<UserCredential> signInWithGoogle() async {
-    final googleUser = await GoogleSignIn().signIn();
-    if (googleUser == null) {
-      throw Exception('구글 로그인이 취소되었습니다.');
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        throw Exception('구글 로그인이 취소되었습니다.');
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      return await _firebaseAuth.signInWithCredential(credential);
+    } catch (error) {
+      if (error is Exception) rethrow;
+      throw Exception('구글 로그인 오류: $error');
     }
-
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    return _firebaseAuth.signInWithCredential(credential);
   }
 
   @override
   Future<UserCredential> signInWithApple() async {
-    final rawNonce = _generateNonce();
-    final nonce = sha256.convert(utf8.encode(rawNonce)).toString();
+    try {
+      final rawNonce = _generateNonce();
+      final nonce = sha256.convert(utf8.encode(rawNonce)).toString();
 
-    final appleCredential = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-      nonce: nonce,
-    );
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
 
-    final oauthCredential = OAuthProvider('apple.com').credential(
-      accessToken: appleCredential.authorizationCode,
-      idToken: appleCredential.identityToken,
-      rawNonce: rawNonce,
-    );
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        accessToken: appleCredential.authorizationCode,
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+      );
 
-    return _firebaseAuth.signInWithCredential(oauthCredential);
+      return await _firebaseAuth.signInWithCredential(oauthCredential);
+    } catch (error) {
+      if (error is Exception) rethrow;
+      throw Exception('애플 로그인 오류: $error');
+    }
   }
 
   @override
