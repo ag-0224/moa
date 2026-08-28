@@ -8,6 +8,7 @@ import com.moa.dto.response.ClubResponse;
 import com.moa.service.ClubService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -15,7 +16,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -78,5 +81,21 @@ public class ClubController {
     ) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(clubService.applyToClub(userId, clubId, request.selfIntroduction()));
+    }
+
+    /**
+     * 메인 페이지 "스터디 등록" 버튼 → 등록 화면의 "작성완료" 제출.
+     * JSON이 아니라 multipart/form-data인 이유는 사진(thumbnail) 파일을 같이
+     * 받기 위해서다 — name/description은 같은 요청의 일반 폼 필드로 온다.
+     */
+    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ClubDetailResponse> createClub(
+            Authentication authentication,
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.createClub(userId, name, description, thumbnail));
     }
 }

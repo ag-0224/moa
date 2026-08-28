@@ -320,6 +320,92 @@ paths:
                     nullable: true
                   error:
                     $ref: '#/components/schemas/ApiError'
+    post:
+      summary: 스터디(동아리) 등록
+      description: >-
+        메인 페이지 "스터디 등록" 버튼 → 등록 화면의 "작성완료" 제출. 사진(thumbnail)
+        파일을 함께 받기 위해 JSON이 아니라 multipart/form-data로 받는다. 등록한
+        사용자가 곧바로 그 스터디의 회장 겸 첫 멤버가 된다(joined=true로 응답).
+        name이 비어있거나 100자를 넘으면 INVALID_CLUB_NAME(400), 이미 존재하는
+        이름이면 DUPLICATE_CLUB_NAME(409)을 반환한다.
+      operationId: createClub
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                description:
+                  type: string
+                thumbnail:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 등록 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ClubDetail'
+                  error:
+                    nullable: true
+        '400':
+          description: 이름이 비어있거나 형식이 올바르지 않음 (INVALID_CLUB_NAME)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 이미 존재하는 스터디 이름 (DUPLICATE_CLUB_NAME)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
   /clubs/{clubId}/favorite:
     patch:
       summary: 동아리 즐겨찾기 설정

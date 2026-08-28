@@ -11,7 +11,9 @@ import com.moa.filter.exception.ClubAlreadyJoinedException;
 import com.moa.filter.exception.ClubApplicationAlreadyPendingException;
 import com.moa.filter.exception.ClubMembershipNotFoundException;
 import com.moa.filter.exception.ClubNotFoundException;
+import com.moa.filter.exception.DuplicateClubNameException;
 import com.moa.filter.exception.InvalidAuthTokenException;
+import com.moa.filter.exception.InvalidClubNameException;
 import com.moa.repository.ClubApplicationRepository;
 import com.moa.repository.ClubMemberRepository;
 import com.moa.repository.ClubRepository;
@@ -19,6 +21,7 @@ import com.moa.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,16 @@ public class ClubService {
     private final ClubMemberRepository clubMemberRepository;
     private final ClubApplicationRepository clubApplicationRepository;
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
+
+    private static final int MAX_NAME_LENGTH = 100;
+
+    /**
+     * "스터디 등록" 화면에는 카테고리를 고르는 입력칸이 없다. 그렇다고 clubs.category를
+     * NULL로 둘 수는 없어서(schema.sql NOT NULL) 고정값을 쓴다 — 카테고리별 분류/필터가
+     * 필요해지면 그때 등록 화면에 선택 UI를 추가하고 이 상수를 걷어내면 된다.
+     */
+    private static final String DEFAULT_CATEGORY = "스터디";
 
     /**
      * 내가 가입한 동아리 목록('마이페이지' 등에서 사용). 전부 joined=true다.
@@ -121,6 +134,47 @@ public class ClubService {
         User user = findUserOrThrow(userId);
         ClubApplication application = clubApplicationRepository.save(ClubApplication.apply(club, user, selfIntroduction));
         return ClubDetailResponse.of(club, false, false, application.getStatus());
+    }
+
+    /**
+     * 메인 페이지 "스터디 등록" 플로팅 버튼 → 등록 화면에서 호출하는 스터디(동아리)
+     * 생성. 만든 사람이 곧바로 그 스터디의 회장 겸 첫 멤버가 되도록, 저장과 함께
+     * club_members 행도 하나 만든다(가입 신청 승인 절차 없이 즉시 가입).
+     *
+     * 이름은 (1) 공백만 있거나 비어있으면 InvalidClubNameException, (2) 100자를
+     * 넘으면 InvalidClubNameException, (3) 이미 존재하면 DuplicateClubNameException을
+     * 던진다 — 프론트(ClubRegisterPage)는 이 셋을 구분하지 않고 전부 "이름" 입력칸
+     * 아래 빨간 글씨 에러로 보여준다.
+     */
+    @Transactional
+    public ClubDetailResponse createClub(Long userId, String name, String description, MultipartFile thumbnail) {
+        User leader = findUserOrThrow(userId);
+        String trimmedName = validateName(name);
+
+        String thumbnailUrl = (thumbnail == null || thumbnail.isEmpty())
+                ? null
+                : fileStorageService.storeClubThumbnail(thumbnail);
+
+        Club club = clubRepository.save(
+                Club.create(trimmedName, leader.getName(), DEFAULT_CATEGORY, thumbnailUrl, description)
+        );
+        clubMemberRepository.save(ClubMember.join(club, leader));
+
+        return ClubDetailResponse.of(club, true, false, null);
+    }
+
+    private String validateName(String name) {
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) {
+            throw new InvalidClubNameException("스터디 이름을 입력해주세요.");
+        }
+        if (trimmed.length() > MAX_NAME_LENGTH) {
+            throw new InvalidClubNameException("스터디 이름은 " + MAX_NAME_LENGTH + "자 이하로 입력해주세요.");
+        }
+        if (clubRepository.existsByName(trimmed)) {
+            throw new DuplicateClubNameException("이미 사용 중인 스터디 이름이에요: " + trimmed);
+        }
+        return trimmed;
     }
 
     private Club findClubOrThrow(Long clubId) {
