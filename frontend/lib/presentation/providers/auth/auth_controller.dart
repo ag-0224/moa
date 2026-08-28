@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
-import '../../../features/auth/repositories/entities/auth_provider.enum.dart';
+import '../../../features/auth/repositories/entities/auth_provider_type.dart';
 import '../../../features/auth/usecases/sign_in_use_case.dart';
 import '../../../features/auth/usecases/sign_out_use_case.dart';
 import '../../../features/user/usecases/get_my_info_use_case.dart';
@@ -29,41 +29,29 @@ class AuthController extends StateNotifier<AuthState> {
   final GetMyInfoUseCase _getMyInfoUseCase;
 
   Future<void> _restoreSession() async {
-    try {
-      final result = await _getMyInfoUseCase();
-      result.when(
-        success: (user) => state = AuthAuthenticated(user),
-        failure: (_) => state = const AuthUnauthenticated(),
-      );
-    } catch (error) {
-      state = const AuthUnauthenticated();
-    }
+    final result = await _getMyInfoUseCase();
+    result.when(
+      success: (user) => state = AuthAuthenticated(user),
+      failure: (_) => state = const AuthUnauthenticated(),
+    );
   }
 
   Future<void> signIn(AuthProviderType provider) async {
     state = const AuthLoading();
-    try {
-      final result = await _signInUseCase(provider);
-      result.when(
-        success: (user) => state = AuthAuthenticated(user),
-        failure: (error) => state = AuthError(_messageOf(error)),
-      );
-    } catch (error) {
-      state = AuthError(_messageOf(error));
-    }
+    final result = await _signInUseCase(provider);
+    result.when(
+      success: (user) => state = AuthAuthenticated(user),
+      failure: (error) => state = AuthError(_messageOf(error)),
+    );
   }
 
   Future<void> signOut() async {
     state = const AuthLoading();
-    try {
-      final result = await _signOutUseCase();
-      result.when(
-        success: (_) => state = const AuthUnauthenticated(),
-        failure: (error) => state = AuthError(_messageOf(error)),
-      );
-    } catch (error) {
-      state = AuthError(_messageOf(error));
-    }
+    final result = await _signOutUseCase();
+    result.when(
+      success: (_) => state = const AuthUnauthenticated(),
+      failure: (error) => state = AuthError(_messageOf(error)),
+    );
   }
 
   String _messageOf(Object error) {

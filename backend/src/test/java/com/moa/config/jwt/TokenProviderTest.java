@@ -24,7 +24,7 @@ class TokenProviderTest {
     @Test
     void rejectsTamperedToken() {
         String token = tokenProvider.createToken(1L, Role.USER);
-        String tampered = token.substring(0, token.length() - 1) + (token.endsWith("a") ? "b" : "a");
+        String tampered = token + "invalid_signature";
 
         assertThat(tokenProvider.validate(tampered)).isFalse();
     }
