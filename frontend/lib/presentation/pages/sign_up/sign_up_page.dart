@@ -47,8 +47,12 @@ class _SignUpPageState extends ConsumerState<SignUpPage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.user.name);
-    _nicknameController = TextEditingController();
+    // 구글/애플 로그인 정보의 이름은 실명이 아닌 경우가 많고(예: 영문 표시 이름),
+    // MOA에서 쓸 실제 이름은 사용자가 직접 입력해야 하므로 비워둔다. 대신 그 값을
+    // 닉네임 칸에 기본값으로 채워 넣어(로그인 정보 기반 자동기입) 매번 처음부터
+    // 타이핑하지 않고 필요하면 그대로 쓰거나 고쳐서 쓸 수 있게 한다.
+    _nameController = TextEditingController();
+    _nicknameController = TextEditingController(text: widget.user.name);
     _emailController = TextEditingController(text: widget.user.email);
     _majorController = TextEditingController();
     _studentIdController = TextEditingController();
