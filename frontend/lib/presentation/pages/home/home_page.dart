@@ -10,6 +10,7 @@ import '../../providers/home/main_tab_provider.dart';
 import '../../widgets/common/navigation/app_bottom_nav_bar.dart';
 import 'widgets/club_list_item.dart';
 import 'widgets/club_section_header.dart';
+import 'widgets/club_search_bar.dart';
 import 'widgets/favorite_action_sheet.dart';
 import 'widgets/home_app_bar.dart';
 import 'widgets/team_register_button.dart';
@@ -64,11 +65,25 @@ class _HomeFeedTab extends ConsumerStatefulWidget {
 
 class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
   final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  bool _isSearching = false;
+  String _searchQuery = '';
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  void _startSearch() => setState(() => _isSearching = true);
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
   }
 
   Future<void> _handleClubLongPress(ClubModel club, Offset anchor) async {
@@ -92,34 +107,77 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
       children: [
         Column(
           children: [
-            const HomeAppBar(),
+            if (_isSearching)
+              ClubSearchBar(
+                controller: _searchController,
+                onBack: _stopSearch,
+                onChanged: (value) => setState(() => _searchQuery = value),
+              )
+            else
+              HomeAppBar(onSearchTap: _startSearch),
             Expanded(
               child: myClubs.when(
-                data: (clubs) => _ClubListView(
-                  clubs: clubs,
-                  scrollController: _scrollController,
-                  onLongPressClub: _handleClubLongPress,
-                ),
+                data: (clubs) => _isSearching
+                    ? _ClubSearchResultsView(clubs: clubs, query: _searchQuery)
+                    : _ClubListView(
+                        clubs: clubs,
+                        scrollController: _scrollController,
+                        onLongPressClub: _handleClubLongPress,
+                      ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(child: Text('동아리 목록을 불러오지 못했어요: $error')),
               ),
             ),
           ],
         ),
-        Positioned(
-          right: 20,
-          bottom: 24,
-          child: TeamRegisterButton(
-            scrollController: _scrollController,
-            onPressed: () {
-              // TODO: 팀(동아리) 등록 화면 연결. 이번 작업 범위는 메인 페이지 UI까지다.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('팀 등록 화면은 아직 준비중이에요.')),
-              );
-            },
+        if (!_isSearching)
+          Positioned(
+            right: 20,
+            bottom: 24,
+            child: TeamRegisterButton(
+              scrollController: _scrollController,
+              onPressed: () {
+                // TODO: 팀(동아리) 등록 화면 연결. 이번 작업 범위는 메인 페이지 UI까지다.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('팀 등록 화면은 아직 준비중이에요.')),
+                );
+              },
+            ),
           ),
-        ),
       ],
+    );
+  }
+}
+
+/// 검색 모드에서 보여주는 결과 목록. 검색어가 비어 있으면 아무것도 보여주지
+/// 않고(Figma 목업 상태), 검색어가 있는데 일치하는 동아리가 없으면 안내
+/// 문구를 보여준다. 동아리 "이름"만 기준으로 부분 일치(대소문자 무시)한다.
+class _ClubSearchResultsView extends StatelessWidget {
+  const _ClubSearchResultsView({required this.clubs, required this.query});
+
+  final List<ClubModel> clubs;
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final results = clubs
+        .where((club) => club.name.toLowerCase().contains(trimmedQuery.toLowerCase()))
+        .toList();
+
+    if (results.isEmpty) {
+      return const Center(
+        child: Text('검색 결과가 없어요.', style: TextStyle(color: Color(0xFF8B8B8B), fontSize: 15)),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.only(top: 8, bottom: 100),
+      children: [for (final club in results) ClubListItem(club: club)],
     );
   }
 }
