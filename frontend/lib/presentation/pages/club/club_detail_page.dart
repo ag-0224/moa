@@ -90,7 +90,9 @@ class _ClubDetailView extends StatelessWidget {
         ),
         Expanded(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            // 회원가입 화면(sign_up_page.dart)과 같은 좌우 32/하단 32 여백을 써서
+            // "지원 하기" 버튼의 위치·여백이 그 화면의 '작성 완료' 버튼과 같아지도록 맞췄다.
+            padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -176,7 +178,7 @@ class _ApplyButton extends ConsumerWidget {
         onPressed: null,
         backgroundColor: _disabledBackground,
         foregroundColor: Colors.black54,
-        child: Text('이미 가입된 동아리예요', style: TextStyle(fontWeight: FontWeight.w600)),
+        child: Text('이미 가입된 동아리예요', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       );
     }
 
@@ -186,21 +188,28 @@ class _ApplyButton extends ConsumerWidget {
           onPressed: null,
           backgroundColor: _disabledBackground,
           foregroundColor: Colors.black54,
-          child: Text('승인 대기 중', style: TextStyle(fontWeight: FontWeight.w600)),
+          child: Text('승인 대기 중', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         );
       case ClubApplicationStatus.rejected:
         return AppRoundedButton(
           onPressed: () => _openApplyPage(context, ref),
           backgroundColor: _blue,
           foregroundColor: Colors.white,
-          child: const Text('다시 지원하기', style: TextStyle(fontWeight: FontWeight.w600)),
+          // sign_up_page.dart의 '작성 완료' 버튼과 글자 스타일까지 동일하게 맞췄다.
+          child: const Text(
+            '다시 지원하기',
+            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
+          ),
         );
       case ClubApplicationStatus.none:
         return AppRoundedButton(
           onPressed: () => _openApplyPage(context, ref),
           backgroundColor: _blue,
           foregroundColor: Colors.white,
-          child: const Text('지원 하기', style: TextStyle(fontWeight: FontWeight.w600)),
+          child: const Text(
+            '지원 하기',
+            style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
+          ),
         );
     }
   }
