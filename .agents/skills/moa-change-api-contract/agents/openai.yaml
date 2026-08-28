@@ -1,0 +1,4 @@
+interface:
+  display_name: MOA Change API Contract
+  short_description: Manage and synchronize REST API / DB contract changes for MOA
+  default_prompt: Use $moa-change-api-contract to safely update API/DB contracts across Spring Boot and Flutter.

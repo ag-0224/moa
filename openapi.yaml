@@ -1,0 +1,27 @@
+openapi: 3.1.0
+info:
+  title: MOA API Contract
+  description: Single Source of Truth for MOA Spring Boot 3 Backend & Flutter Frontend REST API
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development Server
+paths:
+  /health:
+    get:
+      summary: Health Check
+      operationId: checkHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  timestamp:
+                    type: string
+                    example: "2026-08-28T10:00:00Z"

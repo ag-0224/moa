@@ -1,0 +1,37 @@
+# --- Environment & Secret files ---
+.env
+.env.*
+!.env.example
+
+# --- IDE & OS files ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.iml
+
+# --- Python & Cache files ---
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# --- Spring Boot (Gradle / Maven) ---
+backend/build/
+backend/.gradle/
+backend/out/
+backend/bin/
+backend/.settings/
+backend/.project/
+backend/.classpath/
+backend/*.log
+
+# --- Flutter ---
+frontend/.dart_tool/
+frontend/.packages
+frontend/build/
+frontend/.pub-cache/
+frontend/.pub/
+frontend/ios/Pods/
+frontend/ios/.symlinks/
+frontend/android/.gradle/
+frontend/android/local.properties
