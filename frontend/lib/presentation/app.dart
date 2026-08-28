@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'pages/home/home_page.dart';
 import 'pages/sign_in/sign_in_page.dart';
+import 'pages/sign_up/sign_up_page.dart';
 import 'pages/splash/splash_page.dart';
 import 'providers/auth/auth_controller.dart';
 import 'providers/auth/auth_state.dart';
@@ -21,6 +22,7 @@ class MoaApp extends ConsumerWidget {
       home: switch (authState) {
         AuthInitial() || AuthLoading() => const SplashPage(),
         AuthAuthenticated() => const HomePage(),
+        AuthNeedsSignUp(:final user) => SignUpPage(user: user),
         AuthUnauthenticated() || AuthError() => const SignInPage(),
       },
     );

@@ -17,4 +17,24 @@ final class UserRepositoryImpl implements UserRepository {
       return Result.failure(error);
     }
   }
+
+  @override
+  Future<Result<UserModel>> completeProfile({
+    required String name,
+    required String nickname,
+    required String major,
+    required String studentId,
+  }) async {
+    try {
+      final user = await _userApiDataSource.completeProfile(
+        name: name,
+        nickname: nickname,
+        major: major,
+        studentId: studentId,
+      );
+      return Result.success(user);
+    } catch (error) {
+      return Result.failure(error);
+    }
+  }
 }

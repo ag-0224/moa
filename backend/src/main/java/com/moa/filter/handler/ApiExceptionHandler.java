@@ -3,6 +3,7 @@ package com.moa.filter.handler;
 import com.moa.dto.response.ApiError;
 import com.moa.dto.response.ApiResponse;
 import com.moa.filter.exception.DuplicateEmailException;
+import com.moa.filter.exception.DuplicateNicknameException;
 import com.moa.filter.exception.FirebaseNotConfiguredException;
 import com.moa.filter.exception.InvalidAuthTokenException;
 import org.slf4j.Logger;
@@ -39,6 +40,12 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDuplicateEmail(DuplicateEmailException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.failure(new ApiError("DUPLICATE_EMAIL", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(DuplicateNicknameException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateNickname(DuplicateNicknameException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(new ApiError("DUPLICATE_NICKNAME", e.getMessage(), List.of())));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
