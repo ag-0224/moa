@@ -2,6 +2,8 @@ package com.moa.filter.handler;
 
 import com.moa.dto.response.ApiError;
 import com.moa.dto.response.ApiResponse;
+import com.moa.filter.exception.ClubMembershipNotFoundException;
+import com.moa.filter.exception.ClubNotFoundException;
 import com.moa.filter.exception.DuplicateEmailException;
 import com.moa.filter.exception.DuplicateNicknameException;
 import com.moa.filter.exception.FirebaseNotConfiguredException;
@@ -46,6 +48,18 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDuplicateNickname(DuplicateNicknameException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.failure(new ApiError("DUPLICATE_NICKNAME", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(ClubNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClubNotFound(ClubNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(new ApiError("CLUB_NOT_FOUND", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(ClubMembershipNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClubMembershipNotFound(ClubMembershipNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(new ApiError("CLUB_MEMBERSHIP_NOT_FOUND", e.getMessage(), List.of())));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
