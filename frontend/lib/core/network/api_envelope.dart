@@ -22,6 +22,19 @@ class ApiEnvelope {
     return fromJson(body['data'] as Map<String, dynamic>);
   }
 
+  /// {success:true, data:[...]}에서 data를 꺼내 리스트의 각 원소를 [fromJson]으로
+  /// 변환한다. GET /clubs, GET /clubs/me처럼 JSON 배열을 내려주는 응답에 쓴다.
+  static List<T> unwrapList<T>(
+    Map<String, dynamic>? body,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    if (body == null || body['success'] != true) {
+      throw ApiException.fromJson(_errorOf(body));
+    }
+    final data = body['data'] as List<dynamic>;
+    return data.map((e) => fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   /// [DioException]을 서버가 표준 에러 봉투로 응답한 경우 [ApiException]으로,
   /// 그 외(네트워크 오류 등 서버 응답 자체가 없는 경우)는 원본 그대로 반환한다.
   static Object mapError(DioException e) {

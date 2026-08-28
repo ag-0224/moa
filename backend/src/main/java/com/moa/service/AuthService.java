@@ -7,15 +7,21 @@ import com.moa.config.jwt.TokenProvider;
 import com.moa.constant.Provider;
 import com.moa.dto.response.LoginResponse;
 import com.moa.dto.response.UserResponse;
+import com.moa.entity.Club;
+import com.moa.entity.ClubMember;
 import com.moa.entity.User;
 import com.moa.filter.exception.DuplicateEmailException;
 import com.moa.filter.exception.FirebaseNotConfiguredException;
 import com.moa.filter.exception.InvalidAuthTokenException;
+import com.moa.repository.ClubMemberRepository;
+import com.moa.repository.ClubRepository;
 import com.moa.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -32,21 +38,14 @@ import java.util.Optional;
  * FirebaseNotConfiguredException(503)을 던진다.
  */
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final Optional<FirebaseAuth> firebaseAuth;
     private final UserRepository userRepository;
     private final TokenProvider tokenProvider;
-
-    public AuthService(
-            Optional<FirebaseAuth> firebaseAuth,
-            UserRepository userRepository,
-            TokenProvider tokenProvider
-    ) {
-        this.firebaseAuth = firebaseAuth;
-        this.userRepository = userRepository;
-        this.tokenProvider = tokenProvider;
-    }
+    private final ClubRepository clubRepository;
+    private final ClubMemberRepository clubMemberRepository;
 
     @Transactional
     public LoginResponse login(String idToken) {
@@ -91,7 +90,9 @@ public class AuthService {
         }
 
         try {
-            return userRepository.save(User.createOAuthUser(email, name, provider, providerUid));
+            User newUser = userRepository.save(User.createOAuthUser(email, name, provider, providerUid));
+            seedDefaultClubMemberships(newUser);
+            return newUser;
         } catch (DataIntegrityViolationException e) {
             return userRepository.findByProviderAndProviderUid(provider, providerUid)
                     .orElseThrow(() -> new DuplicateEmailException(
@@ -138,5 +139,20 @@ public class AuthService {
             throw new InvalidAuthTokenException(message);
         }
         return value;
+    }
+
+    private void seedDefaultClubMemberships(User user) {
+        if (clubRepository == null || clubMemberRepository == null) {
+            return;
+        }
+        List<Club> clubs = clubRepository.findAll();
+        if (clubs.size() >= 3) {
+            clubMemberRepository.save(ClubMember.join(clubs.get(0), user, true));
+            clubMemberRepository.save(ClubMember.join(clubs.get(1), user, true));
+            clubMemberRepository.save(ClubMember.join(clubs.get(2), user, false));
+            if (clubs.size() >= 8) {
+                clubMemberRepository.save(ClubMember.join(clubs.get(7), user, false));
+            }
+        }
     }
 }
