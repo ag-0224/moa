@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../features/club/models/club_model.dart';
-import '../../../features/health/models/health_status.dart';
-import '../../providers/auth/auth_controller.dart';
-import '../../providers/auth/auth_state.dart';
 import '../../providers/di_providers.dart';
 import '../../providers/home/main_tab_provider.dart';
 import '../../widgets/common/navigation/app_bottom_nav_bar.dart';
 import '../club/club_detail_page.dart';
 import '../club/club_home_placeholder_page.dart';
+import '../my_page/my_page_tab.dart';
 import 'widgets/club_list_item.dart';
 import 'widgets/club_section_header.dart';
 import 'widgets/club_search_bar.dart';
@@ -39,7 +37,7 @@ class HomePage extends ConsumerWidget {
         children: const [
           _HomeFeedTab(),
           _StatsPlaceholderTab(),
-          _MyPageTab(),
+          MyPageTab(),
         ],
       ),
       // 동아리 검색 중에는 하단 탭 바를 숨긴다(Figma 검색 화면 참고).
@@ -306,73 +304,6 @@ class _StatsPlaceholderTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text('통계 화면은 아직 준비중이에요.', style: TextStyle(color: Color(0xFF8B8B8B))),
-    );
-  }
-}
-
-/// 마이페이지 탭. 리팩토링 전 home_page.dart의 내용(사용자 정보 + 서버 상태 +
-/// 로그아웃)을 그대로 옮겨왔다.
-class _MyPageTab extends ConsumerWidget {
-  const _MyPageTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
-    final user = authState is AuthAuthenticated ? authState.user : null;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('마이페이지'),
-        actions: [
-          IconButton(
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (user != null) ...[
-              Text('안녕하세요, ${user.name}님', style: Theme.of(context).textTheme.titleLarge),
-              Text(user.email),
-              const SizedBox(height: 24),
-            ],
-            Text('서버 상태', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            const _HealthStatusView(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HealthStatusView extends ConsumerWidget {
-  const _HealthStatusView();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final checkHealth = ref.watch(checkHealthUseCaseProvider);
-
-    return FutureBuilder<HealthStatus>(
-      future: checkHealth(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Text('확인 중...');
-        }
-        if (snapshot.hasError) {
-          return Text(
-            '서버에 연결할 수 없습니다: ${snapshot.error}',
-            style: const TextStyle(color: Colors.red),
-          );
-        }
-        final health = snapshot.data!;
-        return Text('${health.status} · ${health.timestamp}');
-      },
     );
   }
 }

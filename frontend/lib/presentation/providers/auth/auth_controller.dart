@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/error_handling/result.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../features/auth/repositories/entities/auth_provider_type.dart';
 import '../../../features/auth/usecases/sign_in_use_case.dart';
 import '../../../features/auth/usecases/sign_out_use_case.dart';
 import '../../../features/user/models/user_model.dart';
+import '../../../features/user/usecases/delete_account_use_case.dart';
 import '../../../features/user/usecases/get_my_info_use_case.dart';
 import '../di_providers.dart';
 import '../home/main_tab_provider.dart';
@@ -16,14 +18,20 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
     ref.watch(signInUseCaseProvider),
     ref.watch(signOutUseCaseProvider),
     ref.watch(getMyInfoUseCaseProvider),
+    ref.watch(deleteAccountUseCaseProvider),
   );
 });
 
 /// 앱 전역 로그인 상태. 시작 시 저장된 토큰으로 GET /users/me를 호출해
 /// 세션이 아직 유효한지 확인한다(자동 로그인).
 class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._ref, this._signInUseCase, this._signOutUseCase, this._getMyInfoUseCase)
-      : super(const AuthInitial()) {
+  AuthController(
+    this._ref,
+    this._signInUseCase,
+    this._signOutUseCase,
+    this._getMyInfoUseCase,
+    this._deleteAccountUseCase,
+  ) : super(const AuthInitial()) {
     _restoreSession();
   }
 
@@ -31,6 +39,7 @@ class AuthController extends StateNotifier<AuthState> {
   final SignInUseCase _signInUseCase;
   final SignOutUseCase _signOutUseCase;
   final GetMyInfoUseCase _getMyInfoUseCase;
+  final DeleteAccountUseCase _deleteAccountUseCase;
 
   void _resetHomeTab() {
     _ref.read(mainTabProvider.notifier).state = MainTab.home;
@@ -84,6 +93,25 @@ class AuthController extends StateNotifier<AuthState> {
       },
       failure: (error) => state = AuthError(_messageOf(error)),
     );
+  }
+
+  /// 마이페이지('내 정보')의 '회원 탈퇴' 버튼이 호출한다. signOut()과 달리
+  /// 실패해도 전역 AuthState를 바꾸지 않는다 — 탈퇴가 실패하면 계정은 그대로
+  /// 살아있고 사용자는 여전히 로그인된 상태이므로, 로그인 화면으로 튕겨내는 건
+  /// 잘못된 신호다. 대신 호출자(마이페이지 화면)가 Result를 직접 받아서 실패를
+  /// 그 화면 안에서(SnackBar 등으로) 보여주고, 성공했을 때만 여기서 로그아웃과
+  /// 같은 뒷정리(Firebase 로그아웃 + 토큰 삭제)를 하고 상태를 전환한다.
+  Future<Result<void>> deleteAccount() async {
+    final result = await _deleteAccountUseCase();
+    await result.when(
+      success: (_) async {
+        await _signOutUseCase();
+        _resetHomeTab();
+        state = const AuthUnauthenticated();
+      },
+      failure: (_) async {},
+    );
+    return result;
   }
 
   String _messageOf(Object error) {
