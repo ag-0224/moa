@@ -48,7 +48,7 @@ class HomePage extends ConsumerWidget {
               onTap: (index) => ref.read(mainTabProvider.notifier).state = MainTab.values[index],
               items: [
                 for (final tab in MainTab.values)
-                  AppBottomNavBarItem(iconAsset: tab.iconAsset, label: tab.label),
+                  AppBottomNavBarItem(iconAsset: tab.iconAsset, selectedIconAsset: tab.selectedIconAsset, label: tab.label),
               ],
             ),
     );

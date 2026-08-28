@@ -10,14 +10,22 @@ import '../../../core/constants/assets.dart';
 /// 아이콘은 Figma(node-id 3073-49, 하단 바 3094-470)의 majesticons 세트를
 /// assets/icons/에 실제 SVG로 받아서 쓴다(core/constants/assets.dart 참고).
 enum MainTab {
-  home(label: '홈', iconAsset: Assets.iconsHome),
-  stats(label: '통계', iconAsset: Assets.iconsAnalytics),
-  myPage(label: '마이페이지', iconAsset: Assets.iconsUser);
+  home(label: '홈', iconAsset: Assets.iconsHome, selectedIconAsset: Assets.iconsHome),
+  stats(
+    label: '통계',
+    iconAsset: Assets.iconsAnalytics,
+    selectedIconAsset: Assets.iconsAnalyticsSelected,
+  ),
+  myPage(label: '마이페이지', iconAsset: Assets.iconsUser, selectedIconAsset: Assets.iconsUserSelected);
 
-  const MainTab({required this.label, required this.iconAsset});
+  const MainTab({required this.label, required this.iconAsset, required this.selectedIconAsset});
 
   final String label;
   final String iconAsset;
+
+  /// 이 탭이 선택됐을 때 보여줄 아이콘(채워진 모양). 홈은 선택 여부와
+  /// 상관없이 같은 아이콘을 쓴다(별도로 채워진 버전이 없음).
+  final String selectedIconAsset;
 }
 
 final mainTabProvider = StateProvider<MainTab>((ref) => MainTab.home);

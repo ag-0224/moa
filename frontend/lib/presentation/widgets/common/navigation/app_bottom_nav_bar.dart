@@ -20,9 +20,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// 회색 배경은 화면 맨 아래까지, 아이콘은 정확히 64px 안에서 가운데 정렬되게
 /// 한다.
 class AppBottomNavBarItem {
-  const AppBottomNavBarItem({required this.iconAsset, required this.label});
+  const AppBottomNavBarItem({required this.iconAsset, required this.selectedIconAsset, required this.label});
 
   final String iconAsset;
+
+  /// 이 탭이 선택된 상태일 때 대신 그릴 아이콘(보통 채워진 모양). 선택 여부에
+  /// 따라 다른 아이콘을 쓰지 않는 탭은 iconAsset과 같은 값을 넘기면 된다.
+  final String selectedIconAsset;
 
   /// 화면에 텍스트로 표시하지는 않지만(디자인에 라벨이 없음), 스크린리더용
   /// Semantics 라벨과 툴팁으로 쓴다.
@@ -66,7 +70,11 @@ class AppBottomNavBar extends StatelessWidget {
                   child: InkWell(
                     onTap: () => onTap(i),
                     child: Center(
-                      child: SvgPicture.asset(items[i].iconAsset, width: _iconSize, height: _iconSize),
+                      child: SvgPicture.asset(
+                        i == currentIndex ? items[i].selectedIconAsset : items[i].iconAsset,
+                        width: _iconSize,
+                        height: _iconSize,
+                      ),
                     ),
                   ),
                 ),
