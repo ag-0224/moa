@@ -18,7 +18,7 @@ class HomeAppBar extends StatelessWidget {
   static const double height = 100;
   static const double _logoWidth = 155;
   static const double _logoHeight = 50;
-  static const double _iconSize = 24;
+  static const double _iconSize = 28;
 
   @override
   Widget build(BuildContext context) {
