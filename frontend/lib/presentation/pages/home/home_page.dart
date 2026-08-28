@@ -122,6 +122,17 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
     ref.invalidate(allClubsProvider);
   }
 
+  /// 동아리 목록(메인 피드)을 아래로 당겨서 새로고침한다. invalidate만 하고
+  /// 끝내면 RefreshIndicator의 로딩 스피너가 새 데이터가 오기도 전에 바로
+  /// 사라져 버리므로, myClubsProvider의 새 Future가 끝날 때까지 기다린다.
+  /// allClubsProvider도 같이 invalidate해서 검색으로 넘어가도 최신 데이터를
+  /// 보게 한다(즐겨찾기 처리 후와 같은 패턴).
+  Future<void> _handleRefresh() async {
+    ref.invalidate(allClubsProvider);
+    ref.invalidate(myClubsProvider);
+    await ref.read(myClubsProvider.future);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSearching = ref.watch(isClubSearchingProvider);
@@ -150,15 +161,43 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
                       loading: () => const Center(child: CircularProgressIndicator()),
                       error: (error, _) => Center(child: Text('검색에 실패했어요: $error')),
                     )
-                  : ref.watch(myClubsProvider).when(
-                      data: (clubs) => _ClubListView(
-                        clubs: clubs,
-                        scrollController: _scrollController,
-                        onTapClub: _handleClubTap,
-                        onLongPressClub: _handleClubLongPress,
+                  : RefreshIndicator(
+                      onRefresh: _handleRefresh,
+                      child: ref.watch(myClubsProvider).when(
+                        data: (clubs) => _ClubListView(
+                          clubs: clubs,
+                          scrollController: _scrollController,
+                          onTapClub: _handleClubTap,
+                          onLongPressClub: _handleClubLongPress,
+                        ),
+                        // RefreshIndicator가 당김 동작을 인식하려면 스크롤 가능한
+                        // 자손이 있어야 해서, 로딩/에러 상태도 Center 대신
+                        // AlwaysScrollableScrollPhysics를 준 ListView로 감쌌다 —
+                        // 그래야 목록이 비어 있거나 에러 상태여도 계속 당겨서
+                        // 새로고침(또는 재시도)할 수 있다.
+                        loading: () => ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: const [
+                            Padding(
+                              padding: EdgeInsets.only(top: 200),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          ],
+                        ),
+                        error: (error, _) => ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 120, horizontal: 24),
+                              child: Text(
+                                '동아리 목록을 불러오지 못했어요: $error',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Color(0xFF8B8B8B), fontSize: 15),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (error, _) => Center(child: Text('동아리 목록을 불러오지 못했어요: $error')),
                     ),
             ),
           ],
@@ -256,15 +295,22 @@ class _ClubListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (clubs.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            '아직 소속된 동아리가 없어요.\n관심있는 동아리를 찾아 가입해보세요!',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF8B8B8B), fontSize: 15),
+      // RefreshIndicator가 당김 동작을 인식하려면 스크롤 가능한 위젯이 있어야
+      // 하므로, 목록이 비어 있어도 Center 대신 AlwaysScrollableScrollPhysics를
+      // 준 ListView로 감싸서 pull-to-refresh가 계속 동작하게 한다.
+      return ListView(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 120, horizontal: 24),
+            child: Text(
+              '아직 소속된 동아리가 없어요.\n관심있는 동아리를 찾아 가입해보세요!',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF8B8B8B), fontSize: 15),
+            ),
           ),
-        ),
+        ],
       );
     }
 
@@ -272,6 +318,7 @@ class _ClubListView extends StatelessWidget {
 
     return ListView(
       controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 100),
       children: [
         if (favorites.isNotEmpty) ...[
