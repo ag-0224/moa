@@ -6,4 +6,7 @@ class Assets {
   Assets._();
 
   static const String logo = 'assets/default_logo.svg';
+
+  /// TechTalk(assets/icons/google_logo.svg)에서 그대로 가져온 구글 로고.
+  static const String iconsGoogleLogo = 'assets/icons/google_logo.svg';
 }
