@@ -1,0 +1,4 @@
+interface:
+  display_name: MOA Prepare Pull Request
+  short_description: Validate completion and prepare PR body for MOA repository
+  default_prompt: Use $moa-prepare-pull-request to verify work and prepare a pull request.

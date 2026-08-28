@@ -1,0 +1,4 @@
+interface:
+  display_name: MOA Work on Issue
+  short_description: Plan and execute an issue in MOA repo following agent guidelines
+  default_prompt: Use $moa-work-on-issue to plan and implement the requested issue.
