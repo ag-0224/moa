@@ -1,3 +1,4 @@
+import '../models/club_detail_model.dart';
 import '../models/club_model.dart';
 
 abstract interface class ClubDataSource {
@@ -10,4 +11,10 @@ abstract interface class ClubDataSource {
 
   /// 동아리 하나의 즐겨찾기 여부를 바꾼다.
   Future<void> setFavorite(int clubId, bool isFavorite);
+
+  /// 동아리 상세(가입 전 소개/지원) 화면에서 쓰는 단건 조회.
+  Future<ClubDetailModel> getClubDetail(int clubId);
+
+  /// 동아리 상세 화면의 "지원 하기" 버튼이 호출하는 가입 신청.
+  Future<ClubDetailModel> applyToClub(int clubId, String selfIntroduction);
 }

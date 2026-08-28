@@ -10,10 +10,13 @@ import '../../features/auth/usecases/sign_in_use_case.dart';
 import '../../features/auth/usecases/sign_out_use_case.dart';
 import '../../features/club/data_source/club_api_data_source.dart';
 import '../../features/club/data_source/club_data_source.dart';
+import '../../features/club/models/club_detail_model.dart';
 import '../../features/club/models/club_model.dart';
 import '../../features/club/repositories/club_repository.dart';
 import '../../features/club/repositories/club_repository_impl.dart';
+import '../../features/club/usecases/apply_to_club_use_case.dart';
 import '../../features/club/usecases/get_all_clubs_use_case.dart';
+import '../../features/club/usecases/get_club_detail_use_case.dart';
 import '../../features/club/usecases/get_my_clubs_use_case.dart';
 import '../../features/club/usecases/set_club_favorite_use_case.dart';
 import '../../features/health/data_source/health_api_data_source.dart';
@@ -94,6 +97,12 @@ final getAllClubsUseCaseProvider = Provider((ref) => GetAllClubsUseCase(ref.watc
 final setClubFavoriteUseCaseProvider =
     Provider((ref) => SetClubFavoriteUseCase(ref.watch(clubRepositoryProvider)));
 
+final getClubDetailUseCaseProvider =
+    Provider((ref) => GetClubDetailUseCase(ref.watch(clubRepositoryProvider)));
+
+final applyToClubUseCaseProvider =
+    Provider((ref) => ApplyToClubUseCase(ref.watch(clubRepositoryProvider)));
+
 /// 메인 페이지(홈 피드)가 watch하는 "내가 속한(가입한) 동아리 목록".
 final myClubsProvider = FutureProvider<List<ClubModel>>((ref) {
   return ref.watch(getMyClubsUseCaseProvider)();
@@ -102,4 +111,11 @@ final myClubsProvider = FutureProvider<List<ClubModel>>((ref) {
 /// 검색 화면이 watch하는 "가입 여부와 상관없는 전체 동아리 목록".
 final allClubsProvider = FutureProvider<List<ClubModel>>((ref) {
   return ref.watch(getAllClubsUseCaseProvider)();
+});
+
+/// 동아리 상세(가입 전 소개/지원) 화면이 watch하는 단건 조회. clubId별로
+/// 캐시되고, 지원 후에는 ref.invalidate(clubDetailProvider(clubId))로 다시
+/// 불러와서 applicationStatus 변경을 반영한다.
+final clubDetailProvider = FutureProvider.family<ClubDetailModel, int>((ref, clubId) {
+  return ref.watch(getClubDetailUseCaseProvider)(clubId);
 });

@@ -8,6 +8,8 @@ import '../../providers/auth/auth_state.dart';
 import '../../providers/di_providers.dart';
 import '../../providers/home/main_tab_provider.dart';
 import '../../widgets/common/navigation/app_bottom_nav_bar.dart';
+import '../club/club_detail_page.dart';
+import '../club/club_home_placeholder_page.dart';
 import 'widgets/club_list_item.dart';
 import 'widgets/club_section_header.dart';
 import 'widgets/club_search_bar.dart';
@@ -92,6 +94,21 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
     });
   }
 
+  /// 동아리를 탭했을 때: 이미 가입한 동아리면 곧바로 해당 동아리 화면으로
+  /// 이동하고(아직 전용 홈 화면이 없어 임시 화면), 가입하지 않은 동아리면
+  /// 소개/지원 화면(ClubDetailPage)을 보여준다.
+  void _handleClubTap(ClubModel club) {
+    if (club.isJoined) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ClubHomePlaceholderPage(club: club)),
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => ClubDetailPage(clubId: club.id)),
+      );
+    }
+  }
+
   Future<void> _handleClubLongPress(ClubModel club, Offset anchor) async {
     final confirmed = await showFavoriteActionSheet(
       context: context,
@@ -128,6 +145,7 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
                       data: (clubs) => _ClubSearchResultsView(
                         clubs: clubs,
                         query: _searchQuery,
+                        onTapClub: _handleClubTap,
                         onLongPressClub: _handleClubLongPress,
                       ),
                       loading: () => const Center(child: CircularProgressIndicator()),
@@ -137,6 +155,7 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
                       data: (clubs) => _ClubListView(
                         clubs: clubs,
                         scrollController: _scrollController,
+                        onTapClub: _handleClubTap,
                         onLongPressClub: _handleClubLongPress,
                       ),
                       loading: () => const Center(child: CircularProgressIndicator()),
@@ -170,10 +189,16 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
 /// ClubSectionHeader + ClubListItem 조합을 그대로 재사용해서 디자인을
 /// 통일했다. 동아리 "이름"만 기준으로 부분 일치(대소문자 무시)한다.
 class _ClubSearchResultsView extends StatelessWidget {
-  const _ClubSearchResultsView({required this.clubs, required this.query, required this.onLongPressClub});
+  const _ClubSearchResultsView({
+    required this.clubs,
+    required this.query,
+    required this.onTapClub,
+    required this.onLongPressClub,
+  });
 
   final List<ClubModel> clubs;
   final String query;
+  final void Function(ClubModel club) onTapClub;
   final void Function(ClubModel club, Offset anchor) onLongPressClub;
 
   @override
@@ -202,11 +227,15 @@ class _ClubSearchResultsView extends StatelessWidget {
         if (joined.isNotEmpty) ...[
           const ClubSectionHeader(title: '가입된 동아리'),
           for (final club in joined)
-            ClubListItem(club: club, onLongPress: (anchor) => onLongPressClub(club, anchor)),
+            ClubListItem(
+              club: club,
+              onTap: () => onTapClub(club),
+              onLongPress: (anchor) => onLongPressClub(club, anchor),
+            ),
         ],
         if (notJoined.isNotEmpty) ...[
           const ClubSectionHeader(title: '가입하지 않은 동아리'),
-          for (final club in notJoined) ClubListItem(club: club),
+          for (final club in notJoined) ClubListItem(club: club, onTap: () => onTapClub(club)),
         ],
       ],
     );
@@ -214,10 +243,16 @@ class _ClubSearchResultsView extends StatelessWidget {
 }
 
 class _ClubListView extends StatelessWidget {
-  const _ClubListView({required this.clubs, required this.scrollController, required this.onLongPressClub});
+  const _ClubListView({
+    required this.clubs,
+    required this.scrollController,
+    required this.onTapClub,
+    required this.onLongPressClub,
+  });
 
   final List<ClubModel> clubs;
   final ScrollController scrollController;
+  final void Function(ClubModel club) onTapClub;
   final void Function(ClubModel club, Offset anchor) onLongPressClub;
 
   @override
@@ -244,11 +279,19 @@ class _ClubListView extends StatelessWidget {
         if (favorites.isNotEmpty) ...[
           const ClubSectionHeader(title: '즐겨찾기'),
           for (final club in favorites)
-            ClubListItem(club: club, onLongPress: (anchor) => onLongPressClub(club, anchor)),
+            ClubListItem(
+              club: club,
+              onTap: () => onTapClub(club),
+              onLongPress: (anchor) => onLongPressClub(club, anchor),
+            ),
         ],
         const ClubSectionHeader(title: '전체'),
         for (final club in clubs)
-          ClubListItem(club: club, onLongPress: (anchor) => onLongPressClub(club, anchor)),
+          ClubListItem(
+            club: club,
+            onTap: () => onTapClub(club),
+            onLongPress: (anchor) => onLongPressClub(club, anchor),
+          ),
       ],
     );
   }
