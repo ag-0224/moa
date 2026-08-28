@@ -11,6 +11,8 @@ import com.moa.entity.User;
 import com.moa.filter.exception.DuplicateEmailException;
 import com.moa.filter.exception.FirebaseNotConfiguredException;
 import com.moa.filter.exception.InvalidAuthTokenException;
+import com.moa.repository.ClubMemberRepository;
+import com.moa.repository.ClubRepository;
 import com.moa.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,12 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private ClubRepository clubRepository;
+
+    @Mock
+    private ClubMemberRepository clubMemberRepository;
+
+    @Mock
     private FirebaseToken firebaseToken;
 
     private TokenProvider tokenProvider;
@@ -52,7 +60,7 @@ class AuthServiceTest {
 
     @Test
     void loginCreatesNewUserWhenNotFound() throws FirebaseAuthException {
-        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider);
+        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider, clubRepository, clubMemberRepository);
 
         when(firebaseAuth.verifyIdToken(anyString())).thenReturn(firebaseToken);
         when(firebaseToken.getUid()).thenReturn("firebase-uid-1");
@@ -74,7 +82,7 @@ class AuthServiceTest {
 
     @Test
     void loginReturnsExistingUserWithoutCreatingDuplicate() throws FirebaseAuthException {
-        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider);
+        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider, clubRepository, clubMemberRepository);
         User existing = User.createOAuthUser("existing@example.com", "Existing User", Provider.APPLE, "apple-uid-1");
 
         when(firebaseAuth.verifyIdToken(anyString())).thenReturn(firebaseToken);
@@ -93,7 +101,7 @@ class AuthServiceTest {
 
     @Test
     void loginThrowsWhenFirebaseNotConfigured() {
-        AuthService authService = new AuthService(Optional.empty(), userRepository, tokenProvider);
+        AuthService authService = new AuthService(Optional.empty(), userRepository, tokenProvider, clubRepository, clubMemberRepository);
 
         assertThatThrownBy(() -> authService.login("any-token"))
                 .isInstanceOf(FirebaseNotConfiguredException.class);
@@ -101,7 +109,7 @@ class AuthServiceTest {
 
     @Test
     void loginThrowsWhenTokenInvalid() throws FirebaseAuthException {
-        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider);
+        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider, clubRepository, clubMemberRepository);
         when(firebaseAuth.verifyIdToken(anyString())).thenThrow(mock(FirebaseAuthException.class));
 
         assertThatThrownBy(() -> authService.login("bad-token"))
@@ -110,7 +118,7 @@ class AuthServiceTest {
 
     @Test
     void loginThrowsDuplicateEmailWhenEmailTakenByDifferentProvider() throws FirebaseAuthException {
-        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider);
+        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider, clubRepository, clubMemberRepository);
         User existingWithSameEmail =
                 User.createOAuthUser("shared@example.com", "Existing User", Provider.GOOGLE, "google-uid-1");
 
@@ -131,7 +139,7 @@ class AuthServiceTest {
 
     @Test
     void loginRecoversFromRaceConditionOnConcurrentFirstLogin() throws FirebaseAuthException {
-        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider);
+        AuthService authService = new AuthService(Optional.of(firebaseAuth), userRepository, tokenProvider, clubRepository, clubMemberRepository);
         User createdByConcurrentRequest =
                 User.createOAuthUser("racer@example.com", "Racer", Provider.GOOGLE, "racer-uid");
 

@@ -22,16 +22,13 @@ INSERT INTO clubs (name, leader_name, category, member_count, thumbnail_url, des
     ('요리 연구회', '박승찬', '취미', 19, NULL, '함께 요리하고 나눠 먹는 걸 좋아하는 사람들의 모임입니다.'),
     ('영화 감상 동아리', '박승찬', '문화예술', 27, NULL, '매주 영화를 함께 보고 이야기를 나누는 동아리입니다.');
 
--- ============================================================================
--- [수동 실행 전용] 아래는 자동으로 실행되지 않는다.
--- 실제 로그인으로 만들어진 본인의 user_id로 바꾼 뒤, H2 콘솔(/h2-console,
--- JDBC URL: jdbc:h2:mem:moa)에서 직접 실행해서 "가입한 동아리"/"즐겨찾기"
--- 상태를 눈으로 확인할 때 쓴다. (users 테이블에서 SELECT id, email FROM
--- users;로 본인 id를 먼저 확인하자. 보통 첫 로그인이면 1이다.)
--- ============================================================================
--- INSERT INTO club_members (club_id, user_id, is_favorite) VALUES
---     (1, 1, TRUE),
---     (2, 1, TRUE),
---     (3, 1, FALSE),
---     (4, 1, FALSE),
---     (5, 1, FALSE);
+-- 로컬(H2) 개발 환경 테스트 및 더미 데이터 시딩용 사용자 (ID = 1)
+INSERT INTO users (email, name, role, provider, provider_uid, nickname, major, student_id) VALUES
+    ('dev@moa.com', '테스트 사용자', 'USER', 'GOOGLE', 'dev_google_uid_1', '모아테스트', '컴퓨터공학과', '20260001');
+
+-- 로컬 개발 환경용 이미 소속된 동아리 및 즐겨찾기 더미 데이터 (User ID = 1)
+INSERT INTO club_members (club_id, user_id, is_favorite) VALUES
+    (1, 1, TRUE),   -- 알고리즘 스터디 (가입됨, 즐겨찾기)
+    (2, 1, TRUE),   -- 사진 동아리 셔터 (가입됨, 즐겨찾기)
+    (3, 1, FALSE),  -- 농구 동아리 (가입됨)
+    (8, 1, FALSE);  -- 영화 감상 동아리 (가입됨)

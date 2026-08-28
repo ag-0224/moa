@@ -46,10 +46,14 @@ public class ClubMember extends BaseEntity {
     private boolean favorite;
 
     public static ClubMember join(Club club, User user) {
+        return join(club, user, false);
+    }
+
+    public static ClubMember join(Club club, User user, boolean favorite) {
         ClubMember member = new ClubMember();
         member.club = club;
         member.user = user;
-        member.favorite = false;
+        member.favorite = favorite;
         return member;
     }
 
