@@ -1,13 +1,21 @@
 package com.moa.service;
 
+import com.moa.constant.ClubApplicationStatus;
 import com.moa.constant.Provider;
+import com.moa.dto.response.ClubDetailResponse;
 import com.moa.dto.response.ClubResponse;
 import com.moa.entity.Club;
+import com.moa.entity.ClubApplication;
 import com.moa.entity.ClubMember;
 import com.moa.entity.User;
+import com.moa.filter.exception.ClubAlreadyJoinedException;
+import com.moa.filter.exception.ClubApplicationAlreadyPendingException;
 import com.moa.filter.exception.ClubMembershipNotFoundException;
+import com.moa.filter.exception.ClubNotFoundException;
+import com.moa.repository.ClubApplicationRepository;
 import com.moa.repository.ClubMemberRepository;
 import com.moa.repository.ClubRepository;
+import com.moa.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -31,9 +39,15 @@ class ClubServiceTest {
     @Mock
     private ClubMemberRepository clubMemberRepository;
 
+    @Mock
+    private ClubApplicationRepository clubApplicationRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
     @Test
     void getMyClubsReturnsOnlyJoinedClubsWithTheirFavoriteFlag() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubMember membership = ClubMember.join(club, user);
@@ -52,7 +66,7 @@ class ClubServiceTest {
 
     @Test
     void getAllClubsMarksOnlyJoinedClubsAsJoined() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
         Club joinedClub = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         Club notJoinedClub = newClub(2L, "등산 동아리", "박승찬", "체육", 12);
         User user = newUser(1L);
@@ -74,7 +88,7 @@ class ClubServiceTest {
 
     @Test
     void setFavoriteUpdatesMembershipWhenJoined() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubMember membership = ClubMember.join(club, user);
@@ -89,12 +103,124 @@ class ClubServiceTest {
 
     @Test
     void setFavoriteThrowsWhenNotJoined() {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
 
         when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> clubService.setFavorite(1L, 1L, true))
                 .isInstanceOf(ClubMembershipNotFoundException.class);
+    }
+
+    @Test
+    void getClubDetailReturnsJoinedWithNullApplicationStatus() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
+        Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
+        User user = newUser(1L);
+        ClubMember membership = ClubMember.join(club, user);
+        membership.changeFavorite(true);
+
+        when(clubRepository.findById(1L)).thenReturn(Optional.of(club));
+        when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.of(membership));
+
+        ClubDetailResponse response = clubService.getClubDetail(1L, 1L);
+
+        assertThat(response.joined()).isTrue();
+        assertThat(response.favorite()).isTrue();
+        assertThat(response.applicationStatus()).isNull();
+    }
+
+    @Test
+    void getClubDetailReturnsApplicationStatusWhenNotJoined() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
+        Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
+        User user = newUser(1L);
+        ClubApplication application = ClubApplication.apply(club, user, "자기소개".repeat(5));
+
+        when(clubRepository.findById(1L)).thenReturn(Optional.of(club));
+        when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(clubApplicationRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.of(application));
+
+        ClubDetailResponse response = clubService.getClubDetail(1L, 1L);
+
+        assertThat(response.joined()).isFalse();
+        assertThat(response.applicationStatus()).isEqualTo(ClubApplicationStatus.PENDING);
+    }
+
+    @Test
+    void getClubDetailThrowsWhenClubNotFound() {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
+
+        when(clubRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> clubService.getClubDetail(1L, 1L))
+                .isInstanceOf(ClubNotFoundException.class);
+    }
+
+    @Test
+    void applyToClubCreatesPendingApplicationWhenNoneExists() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
+        Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
+        User user = newUser(1L);
+
+        when(clubRepository.findById(1L)).thenReturn(Optional.of(club));
+        when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(clubApplicationRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(clubApplicationRepository.save(org.mockito.ArgumentMatchers.any(ClubApplication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ClubDetailResponse response = clubService.applyToClub(1L, 1L, "자기소개".repeat(5));
+
+        assertThat(response.applicationStatus()).isEqualTo(ClubApplicationStatus.PENDING);
+        assertThat(response.joined()).isFalse();
+    }
+
+    @Test
+    void applyToClubThrowsWhenAlreadyJoined() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
+        Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
+        User user = newUser(1L);
+        ClubMember membership = ClubMember.join(club, user);
+
+        when(clubRepository.findById(1L)).thenReturn(Optional.of(club));
+        when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.of(membership));
+
+        assertThatThrownBy(() -> clubService.applyToClub(1L, 1L, "자기소개".repeat(5)))
+                .isInstanceOf(ClubAlreadyJoinedException.class);
+    }
+
+    @Test
+    void applyToClubThrowsWhenApplicationAlreadyPending() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
+        Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
+        User user = newUser(1L);
+        ClubApplication application = ClubApplication.apply(club, user, "자기소개".repeat(5));
+
+        when(clubRepository.findById(1L)).thenReturn(Optional.of(club));
+        when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(clubApplicationRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.of(application));
+
+        assertThatThrownBy(() -> clubService.applyToClub(1L, 1L, "자기소개".repeat(5)))
+                .isInstanceOf(ClubApplicationAlreadyPendingException.class);
+    }
+
+    @Test
+    void applyToClubResubmitsRejectedApplication() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository);
+        Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
+        User user = newUser(1L);
+        ClubApplication application = ClubApplication.apply(club, user, "이전 자기소개".repeat(5));
+        application.reject();
+
+        when(clubRepository.findById(1L)).thenReturn(Optional.of(club));
+        when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
+        when(clubApplicationRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.of(application));
+
+        ClubDetailResponse response = clubService.applyToClub(1L, 1L, "새로운 자기소개".repeat(5));
+
+        assertThat(response.applicationStatus()).isEqualTo(ClubApplicationStatus.PENDING);
+        assertThat(application.getStatus()).isEqualTo(ClubApplicationStatus.PENDING);
+        assertThat(application.getSelfIntroduction()).isEqualTo("새로운 자기소개".repeat(5));
     }
 
     // Club/User는 @GeneratedValue id라 public 생성자/setter가 없다. schema.sql/data.sql로

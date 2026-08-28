@@ -44,4 +44,12 @@ public class Club extends BaseEntity {
 
     @Column(name = "thumbnail_url")
     private String thumbnailUrl;
+
+    /**
+     * 동아리 상세(가입 전 소개) 화면에 보여줄 한두 문장짜리 소개 글.
+     * 목록 화면(ClubListItem/ClubResponse)에는 쓰이지 않고, 상세 화면
+     * (ClubDetailResponse)에서만 노출한다.
+     */
+    @Column(columnDefinition = "TEXT")
+    private String description;
 }

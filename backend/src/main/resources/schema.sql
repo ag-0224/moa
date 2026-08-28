@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS clubs (
     category VARCHAR(50) NOT NULL,
     member_count INTEGER NOT NULL DEFAULT 0,
     thumbnail_url VARCHAR(500),
+    -- 가입 전 소개(동아리 상세 화면)에만 쓰인다. 목록 화면에는 노출하지 않는다.
+    description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -50,3 +52,20 @@ CREATE TABLE IF NOT EXISTS club_members (
 
 CREATE INDEX IF NOT EXISTS idx_club_members_user_id ON club_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_club_members_club_id ON club_members(club_id);
+
+-- 가입 신청서. club_members(가입 확정)와는 별개 테이블이다 — 신청은 아직
+-- 가입이 아니고, 동아리장이 승인해야 club_members에 행이 생긴다(승인 기능
+-- 자체는 이번 범위 밖이라 아직 없다). 사용자당 동아리 하나에 신청서 하나만
+-- 존재할 수 있고, 거절되면 같은 행을 재사용해 다시 신청(PENDING)한다.
+CREATE TABLE IF NOT EXISTS club_applications (
+    id BIGSERIAL PRIMARY KEY,
+    club_id BIGINT NOT NULL REFERENCES clubs(id),
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    self_introduction VARCHAR(1000) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_club_applications_club_user UNIQUE (club_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_club_applications_user_id ON club_applications(user_id);

@@ -1,7 +1,9 @@
 package com.moa.controller;
 
+import com.moa.dto.request.ApplyClubRequest;
 import com.moa.dto.request.SetClubFavoriteRequest;
 import com.moa.dto.response.ApiResponse;
+import com.moa.dto.response.ClubDetailResponse;
 import com.moa.dto.response.ClubResponse;
 import com.moa.service.ClubService;
 import jakarta.validation.Valid;
@@ -10,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,5 +56,27 @@ public class ClubController {
     ) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(clubService.setFavorite(userId, clubId, request.favorite()));
+    }
+
+    /**
+     * 동아리 상세(가입 전 소개/지원) 화면.
+     */
+    @GetMapping("/{clubId}")
+    public ApiResponse<ClubDetailResponse> getClubDetail(Authentication authentication, @PathVariable Long clubId) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.getClubDetail(userId, clubId));
+    }
+
+    /**
+     * 동아리 상세 화면의 "지원 하기" 버튼이 호출하는 가입 신청.
+     */
+    @PostMapping("/{clubId}/apply")
+    public ApiResponse<ClubDetailResponse> applyToClub(
+            Authentication authentication,
+            @PathVariable Long clubId,
+            @Valid @RequestBody ApplyClubRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.applyToClub(userId, clubId, request.selfIntroduction()));
     }
 }

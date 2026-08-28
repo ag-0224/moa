@@ -2,6 +2,8 @@ package com.moa.filter.handler;
 
 import com.moa.dto.response.ApiError;
 import com.moa.dto.response.ApiResponse;
+import com.moa.filter.exception.ClubAlreadyJoinedException;
+import com.moa.filter.exception.ClubApplicationAlreadyPendingException;
 import com.moa.filter.exception.ClubMembershipNotFoundException;
 import com.moa.filter.exception.ClubNotFoundException;
 import com.moa.filter.exception.DuplicateEmailException;
@@ -60,6 +62,18 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleClubMembershipNotFound(ClubMembershipNotFoundException e) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.failure(new ApiError("CLUB_MEMBERSHIP_NOT_FOUND", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(ClubAlreadyJoinedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClubAlreadyJoined(ClubAlreadyJoinedException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(new ApiError("CLUB_ALREADY_JOINED", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(ClubApplicationAlreadyPendingException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClubApplicationAlreadyPending(ClubApplicationAlreadyPendingException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(new ApiError("CLUB_APPLICATION_ALREADY_PENDING", e.getMessage(), List.of())));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

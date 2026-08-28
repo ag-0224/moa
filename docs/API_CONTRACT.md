@@ -92,3 +92,26 @@ user_id)` 행이 존재하는지로 판단한다(`User.nickname == null`이 "회
 동아리"/"즐겨찾기" 화면까지 확인하려면 `data.sql` 맨 아래 주석 처리된 `club_members`
 INSERT 스니펫을 본인의 `user_id`에 맞게 고쳐서 H2 콘솔(`/h2-console`)에서 직접
 실행하면 된다.
+
+### 동아리 상세/가입 신청 ('지원 하기')
+
+가입하지 않은 동아리를 눌렀을 때 보여주는 소개 화면과 그 화면의 '지원 하기'
+버튼이 쓰는 API다.
+
+- `GET /clubs/{clubId}` — 동아리 상세 조회. 목록용 `Club`과 달리 `description`을
+  포함하고, `joined`가 false일 때 `applicationStatus`(`null`/`PENDING`/`REJECTED`)로
+  신청 진행 상태를 함께 내려준다. 존재하지 않는 `clubId`면 `404 CLUB_NOT_FOUND`.
+- `POST /clubs/{clubId}/apply { "selfIntroduction": "..." }` — 가입 신청 제출.
+  성공하면 신청이 `PENDING` 상태로 생성(또는 재신청)된다.
+  - 이미 가입한 동아리면 `409 CLUB_ALREADY_JOINED`.
+  - 이미 `PENDING` 신청서가 있으면 `409 CLUB_APPLICATION_ALREADY_PENDING`.
+  - `REJECTED` 신청서가 있으면 새로 만들지 않고 그 신청서를 재사용해 새
+    자기소개로 다시 `PENDING`으로 돌린다(재신청).
+
+가입 신청은 `club_members`가 아니라 별도의 `club_applications` 테이블에
+저장된다. `club_members`(가입 확정)에 행이 생기려면 동아리장이 신청을
+승인해야 하는데, **동아리장 승인/거절 기능은 아직 없다(이번 범위 밖)** —
+`ClubApplication.approve()`/`reject()` 메서드는 그 기능을 만들 때 쓰라고
+미리 준비해둔 자리로, 지금은 어디서도 호출되지 않는다. 즉 현재 시점에서는
+신청을 넣어도 실제로 가입 상태(`joined: true`)가 되지는 않으며, 상태 값이
+`PENDING`으로 남아있는 것까지만 확인할 수 있다.
