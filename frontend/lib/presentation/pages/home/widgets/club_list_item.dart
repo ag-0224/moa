@@ -7,8 +7,8 @@ import '../../../../features/club/models/club_model.dart';
 ///
 /// - thumbnailUrl이 없으면(동아리 사진 미등록) Assets.clubDefaultThumbnail
 ///   기본 이미지를 대신 보여준다.
-/// - 대표 이름(leaderName)·카테고리·인원수를 한 줄에 같이 보여준다(더미데이터는
-///   전부 대표 이름이 "박승찬", club_mock_data_source.dart 참고).
+/// - 대표 이름(leaderName)·카테고리·인원수를 한 줄에 같이 보여준다(로컬 개발용
+///   더미데이터는 전부 대표 이름이 "박승찬", backend/src/main/resources/data.sql 참고).
 /// - 글자 스펙(폰트 크기/굵기/줄간격/자간)은 Figma 값을 최대한 반영하되,
 ///   Flutter TextStyle이 표현 못 하는 부분(예: 퍼센트 단위 자간 → 폰트
 ///   크기에 비례한 절대값으로 환산)은 근사치로 구현했다.

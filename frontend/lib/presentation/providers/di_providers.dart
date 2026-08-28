@@ -8,8 +8,8 @@ import '../../features/auth/repositories/auth_repository.dart';
 import '../../features/auth/repositories/auth_repository_impl.dart';
 import '../../features/auth/usecases/sign_in_use_case.dart';
 import '../../features/auth/usecases/sign_out_use_case.dart';
+import '../../features/club/data_source/club_api_data_source.dart';
 import '../../features/club/data_source/club_data_source.dart';
-import '../../features/club/data_source/club_mock_data_source.dart';
 import '../../features/club/models/club_model.dart';
 import '../../features/club/repositories/club_repository.dart';
 import '../../features/club/repositories/club_repository_impl.dart';
@@ -79,11 +79,8 @@ final healthRepositoryProvider = Provider<HealthRepository>((ref) {
 
 final checkHealthUseCaseProvider = Provider((ref) => CheckHealthUseCase(ref.watch(healthRepositoryProvider)));
 
-/// TODO(backend): ClubMockDataSourceImpl은 목데이터를 반환한다(club_mock_data_source.dart
-/// 참고). 실제 동아리 목록 API가 생기면 이 provider가 가리키는 구현체만
-/// ClubApiDataSourceImpl로 바꾸면 된다.
 final clubDataSourceProvider = Provider<ClubDataSource>((ref) {
-  return ClubMockDataSourceImpl();
+  return ClubApiDataSourceImpl(ref.watch(apiClientProvider));
 });
 
 final clubRepositoryProvider = Provider<ClubRepository>((ref) {
