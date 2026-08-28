@@ -13,6 +13,7 @@ import '../../features/club/data_source/club_mock_data_source.dart';
 import '../../features/club/models/club_model.dart';
 import '../../features/club/repositories/club_repository.dart';
 import '../../features/club/repositories/club_repository_impl.dart';
+import '../../features/club/usecases/get_all_clubs_use_case.dart';
 import '../../features/club/usecases/get_my_clubs_use_case.dart';
 import '../../features/club/usecases/set_club_favorite_use_case.dart';
 import '../../features/health/data_source/health_api_data_source.dart';
@@ -91,10 +92,17 @@ final clubRepositoryProvider = Provider<ClubRepository>((ref) {
 
 final getMyClubsUseCaseProvider = Provider((ref) => GetMyClubsUseCase(ref.watch(clubRepositoryProvider)));
 
+final getAllClubsUseCaseProvider = Provider((ref) => GetAllClubsUseCase(ref.watch(clubRepositoryProvider)));
+
 final setClubFavoriteUseCaseProvider =
     Provider((ref) => SetClubFavoriteUseCase(ref.watch(clubRepositoryProvider)));
 
-/// 메인 페이지(홈 피드)가 watch하는 "내가 속한 동아리 목록".
+/// 메인 페이지(홈 피드)가 watch하는 "내가 속한(가입한) 동아리 목록".
 final myClubsProvider = FutureProvider<List<ClubModel>>((ref) {
   return ref.watch(getMyClubsUseCaseProvider)();
+});
+
+/// 검색 화면이 watch하는 "가입 여부와 상관없는 전체 동아리 목록".
+final allClubsProvider = FutureProvider<List<ClubModel>>((ref) {
+  return ref.watch(getAllClubsUseCaseProvider)();
 });

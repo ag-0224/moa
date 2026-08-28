@@ -21,3 +21,8 @@ enum MainTab {
 }
 
 final mainTabProvider = StateProvider<MainTab>((ref) => MainTab.home);
+
+/// 홈 탭에서 동아리 검색 모드인지 여부. HomePage(하단 탭 바 표시 여부)와
+/// _HomeFeedTab(검색창/검색 결과 표시 여부)이 함께 봐야 해서 위젯 트리
+/// 상위(HomePage)와 하위(_HomeFeedTab)에 걸쳐 공유하는 상태로 뺐다.
+final isClubSearchingProvider = StateProvider<bool>((ref) => false);

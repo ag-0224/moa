@@ -11,5 +11,8 @@ final class ClubRepositoryImpl implements ClubRepository {
   Future<List<ClubModel>> getMyClubs() => _clubDataSource.getMyClubs();
 
   @override
+  Future<List<ClubModel>> getAllClubs() => _clubDataSource.getAllClubs();
+
+  @override
   Future<void> setFavorite(int clubId, bool isFavorite) => _clubDataSource.setFavorite(clubId, isFavorite);
 }

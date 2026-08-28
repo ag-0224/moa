@@ -28,6 +28,7 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTab = ref.watch(mainTabProvider);
+    final isSearching = ref.watch(isClubSearchingProvider);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -39,14 +40,17 @@ class HomePage extends ConsumerWidget {
           _MyPageTab(),
         ],
       ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: currentTab.index,
-        onTap: (index) => ref.read(mainTabProvider.notifier).state = MainTab.values[index],
-        items: [
-          for (final tab in MainTab.values)
-            AppBottomNavBarItem(iconAsset: tab.iconAsset, label: tab.label),
-        ],
-      ),
+      // 동아리 검색 중에는 하단 탭 바를 숨긴다(Figma 검색 화면 참고).
+      bottomNavigationBar: isSearching
+          ? null
+          : AppBottomNavBar(
+              currentIndex: currentTab.index,
+              onTap: (index) => ref.read(mainTabProvider.notifier).state = MainTab.values[index],
+              items: [
+                for (final tab in MainTab.values)
+                  AppBottomNavBarItem(iconAsset: tab.iconAsset, label: tab.label),
+              ],
+            ),
     );
   }
 }
@@ -66,21 +70,23 @@ class _HomeFeedTab extends ConsumerStatefulWidget {
 class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
-  bool _isSearching = false;
   String _searchQuery = '';
 
   @override
   void dispose() {
     _scrollController.dispose();
     _searchController.dispose();
+    // 검색 중에 이 화면을 벗어나는 경우(탭 전환은 검색 중엔 막혀 있지만
+    // 로그아웃 등으로도 dispose될 수 있다)를 대비해 공유 상태를 초기화한다.
+    ref.read(isClubSearchingProvider.notifier).state = false;
     super.dispose();
   }
 
-  void _startSearch() => setState(() => _isSearching = true);
+  void _startSearch() => ref.read(isClubSearchingProvider.notifier).state = true;
 
   void _stopSearch() {
+    ref.read(isClubSearchingProvider.notifier).state = false;
     setState(() {
-      _isSearching = false;
       _searchQuery = '';
       _searchController.clear();
     });
@@ -97,17 +103,18 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
 
     await ref.read(setClubFavoriteUseCaseProvider)(club.id, !club.isFavorite);
     ref.invalidate(myClubsProvider);
+    ref.invalidate(allClubsProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    final myClubs = ref.watch(myClubsProvider);
+    final isSearching = ref.watch(isClubSearchingProvider);
 
     return Stack(
       children: [
         Column(
           children: [
-            if (_isSearching)
+            if (isSearching)
               ClubSearchBar(
                 controller: _searchController,
                 onBack: _stopSearch,
@@ -116,21 +123,29 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
             else
               HomeAppBar(onSearchTap: _startSearch),
             Expanded(
-              child: myClubs.when(
-                data: (clubs) => _isSearching
-                    ? _ClubSearchResultsView(clubs: clubs, query: _searchQuery)
-                    : _ClubListView(
+              child: isSearching
+                  ? ref.watch(allClubsProvider).when(
+                      data: (clubs) => _ClubSearchResultsView(
+                        clubs: clubs,
+                        query: _searchQuery,
+                        onLongPressClub: _handleClubLongPress,
+                      ),
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (error, _) => Center(child: Text('검색에 실패했어요: $error')),
+                    )
+                  : ref.watch(myClubsProvider).when(
+                      data: (clubs) => _ClubListView(
                         clubs: clubs,
                         scrollController: _scrollController,
                         onLongPressClub: _handleClubLongPress,
                       ),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(child: Text('동아리 목록을 불러오지 못했어요: $error')),
-              ),
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (error, _) => Center(child: Text('동아리 목록을 불러오지 못했어요: $error')),
+                    ),
             ),
           ],
         ),
-        if (!_isSearching)
+        if (!isSearching)
           Positioned(
             right: 20,
             bottom: 24,
@@ -150,13 +165,16 @@ class _HomeFeedTabState extends ConsumerState<_HomeFeedTab> {
 }
 
 /// 검색 모드에서 보여주는 결과 목록. 검색어가 비어 있으면 아무것도 보여주지
-/// 않고(Figma 목업 상태), 검색어가 있는데 일치하는 동아리가 없으면 안내
-/// 문구를 보여준다. 동아리 "이름"만 기준으로 부분 일치(대소문자 무시)한다.
+/// 않고(Figma 목업 상태), 검색어가 있으면 "가입된 동아리"와 "가입하지 않은
+/// 동아리"를 나눠서 보여준다 — 메인 피드(_ClubListView)와 같은
+/// ClubSectionHeader + ClubListItem 조합을 그대로 재사용해서 디자인을
+/// 통일했다. 동아리 "이름"만 기준으로 부분 일치(대소문자 무시)한다.
 class _ClubSearchResultsView extends StatelessWidget {
-  const _ClubSearchResultsView({required this.clubs, required this.query});
+  const _ClubSearchResultsView({required this.clubs, required this.query, required this.onLongPressClub});
 
   final List<ClubModel> clubs;
   final String query;
+  final void Function(ClubModel club, Offset anchor) onLongPressClub;
 
   @override
   Widget build(BuildContext context) {
@@ -175,9 +193,22 @@ class _ClubSearchResultsView extends StatelessWidget {
       );
     }
 
+    final joined = results.where((club) => club.isJoined).toList();
+    final notJoined = results.where((club) => !club.isJoined).toList();
+
     return ListView(
       padding: const EdgeInsets.only(top: 8, bottom: 100),
-      children: [for (final club in results) ClubListItem(club: club)],
+      children: [
+        if (joined.isNotEmpty) ...[
+          const ClubSectionHeader(title: '가입된 동아리'),
+          for (final club in joined)
+            ClubListItem(club: club, onLongPress: (anchor) => onLongPressClub(club, anchor)),
+        ],
+        if (notJoined.isNotEmpty) ...[
+          const ClubSectionHeader(title: '가입하지 않은 동아리'),
+          for (final club in notJoined) ClubListItem(club: club),
+        ],
+      ],
     );
   }
 }
