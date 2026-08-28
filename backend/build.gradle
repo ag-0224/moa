@@ -43,6 +43,13 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     runtimeOnly 'com.h2database:h2'
 
+    // 로컬 개발 편의: 컨트롤러/서비스 코드를 고치고 재빌드하면(예: IDE의
+    // "Build Project") 서버가 자동으로 재시작된다. developmentOnly라서
+    // 실행 가능한 jar(운영 배포용)에는 포함되지 않는다. 이게 없으면 코드를
+    // 고쳐도 이미 떠 있는 서버 프로세스는 그대로라서, 새로 만든 엔드포인트를
+    // 호출하면 405/404가 나는 것처럼 보일 수 있다(POST /clubs 405가 그 예).
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

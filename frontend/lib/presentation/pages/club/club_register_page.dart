@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -53,14 +54,27 @@ class _ClubRegisterPageState extends ConsumerState<ClubRegisterPage> {
       setState(() => _thumbnail = File(picked.path));
     } catch (e) {
       if (!mounted) return;
-      // 갤러리 접근 권한이 없거나, image_picker를 새로 추가한 뒤 완전히
-      // 재시작(hot restart/재빌드)하지 않아 네이티브 쪽에 플러그인이 아직
-      // 등록되지 않은 상태(MissingPluginException)면 여기서 예외가 난다.
-      // 버튼이 그냥 "안 눌리는 것"처럼 보이지 않도록 원인을 화면에 보여준다.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('사진을 불러오지 못했어요: $e')),
+        SnackBar(content: Text(_thumbnailErrorMessage(e))),
       );
     }
+  }
+
+  /// image_picker를 pubspec.yaml에 새로 추가한 뒤 앱을 완전히 재시작(정지 후
+  /// 다시 실행)하지 않고 hot reload/hot restart만 했을 때 정확히 이 에러가
+  /// 난다 — 네이티브 플러그인 등록은 앱 프로세스가 처음 켜질 때 한 번만
+  /// 일어나서, 코드/네이티브 프로젝트에 플러그인이 다 들어있어도 지금 떠
+  /// 있는 프로세스에는 반영이 안 된 상태이기 때문이다("PlatformException
+  /// (channel-error, Unable to establish connection on channel:
+  /// dev.flutter.pigeon.image_picker_*.ImagePickerApi.pickImage, ...)"가
+  /// 전형적인 신호). 이 경우는 코드를 더 고쳐도 해결되지 않고, 앱을 완전히
+  /// 종료했다가(에뮬레이터/시뮬레이터에서 flutter run을 처음부터 다시)
+  /// 실행해야 한다.
+  String _thumbnailErrorMessage(Object error) {
+    if (error is PlatformException && error.code == 'channel-error') {
+      return '사진 기능이 아직 앱에 반영되지 않았어요. 앱을 완전히 종료했다가 다시 실행해주세요.';
+    }
+    return '사진을 불러오지 못했어요: $error';
   }
 
   Future<void> _submit() async {
