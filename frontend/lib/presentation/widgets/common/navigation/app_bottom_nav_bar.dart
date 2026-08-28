@@ -69,6 +69,8 @@ class AppBottomNavBar extends StatelessWidget {
                   label: items[i].label,
                   child: InkWell(
                     onTap: () => onTap(i),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
                     child: Center(
                       child: SvgPicture.asset(
                         i == currentIndex ? items[i].selectedIconAsset : items[i].iconAsset,
