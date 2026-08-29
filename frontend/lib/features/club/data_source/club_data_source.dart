@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../models/club_detail_model.dart';
 import '../models/club_model.dart';
 
@@ -17,4 +19,12 @@ abstract interface class ClubDataSource {
 
   /// 동아리 상세 화면의 "지원 하기" 버튼이 호출하는 가입 신청.
   Future<ClubDetailModel> applyToClub(int clubId, String selfIntroduction);
+
+  /// 메인 페이지 "스터디 등록" 버튼 → 등록 화면의 "작성완료" 제출.
+  /// thumbnail이 null이면 사진을 등록하지 않은 것이다(기본 placeholder 이미지로 대체됨).
+  Future<ClubDetailModel> createClub({
+    required String name,
+    required String description,
+    File? thumbnail,
+  });
 }

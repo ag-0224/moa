@@ -61,6 +61,21 @@ Firebase Authentication(`firebase_auth` + `google_sign_in` / `sign_in_with_apple
 "studentId" }`를 호출한다. 이미 다른 사용자가 쓰고 있는 닉네임이면 `409
 DUPLICATE_NICKNAME`을 반환한다.
 
+### 개인정보 수정 / 회원 탈퇴
+
+마이페이지('내 정보') 화면에서 쓰는 API다.
+
+- 개인정보 수정은 회원가입 때와 같은 `PATCH /users/me` 엔드포인트를 그대로
+  재사용한다 — 최초 제출이냐 이후 수정이냐를 서버가 구분하지 않고 매번 name/
+  nickname/major/studentId 전체를 덮어쓴다. 닉네임 중복 시 `409
+  DUPLICATE_NICKNAME`인 것도 동일하다.
+- `DELETE /users/me` — 회원 탈퇴. 계정을 완전히 삭제한다(soft delete 없음).
+  `club_members`/`club_applications`에 남아있는 해당 사용자의 행도 함께
+  삭제한 뒤 `users` 행을 지운다(둘 다 users.id를 참조하는 외래키에 ON DELETE
+  CASCADE가 없어서, 순서대로 지우지 않으면 외래키 제약 위반이 난다). 삭제
+  후에는 클라이언트가 Firebase 로그아웃 + 저장된 액세스 토큰 삭제까지 해서
+  로그인 화면으로 돌아가야 한다(AuthController.deleteAccount 참고).
+
 ## 4. 동아리 (Club)
 
 메인 페이지 홈 피드와 마이페이지에서 쓰는 동아리 목록/즐겨찾기 API다. 세 엔드포인트 모두
@@ -115,3 +130,24 @@ INSERT 스니펫을 본인의 `user_id`에 맞게 고쳐서 H2 콘솔(`/h2-conso
 미리 준비해둔 자리로, 지금은 어디서도 호출되지 않는다. 즉 현재 시점에서는
 신청을 넣어도 실제로 가입 상태(`joined: true`)가 되지는 않으며, 상태 값이
 `PENDING`으로 남아있는 것까지만 확인할 수 있다.
+
+### 스터디 등록 (동아리 생성)
+
+메인 페이지의 "스터디 등록" 플로팅 버튼 → 등록 화면의 "작성완료" 제출이
+호출하는 API다.
+
+- `POST /clubs` (multipart/form-data) — 필드: `name`(필수, 100자 이하),
+  `description`(필수), `thumbnail`(선택, 이미지 파일). JSON이 아니라
+  multipart인 이유는 사진 파일을 같이 받기 위해서다.
+  - 성공하면 만든 사용자가 곧바로 그 스터디의 회장 겸 첫 멤버가 되어
+    `joined: true`인 `ClubDetail`을 응답한다(`club_members` 행이 즉시 생성됨
+    — 가입 신청/승인 절차 없음).
+  - `name`이 비어있거나 100자를 넘으면 `400 INVALID_CLUB_NAME`.
+  - 이미 존재하는 이름이면 `409 DUPLICATE_CLUB_NAME`.
+  - 등록 화면에는 카테고리 선택 UI가 없어서, 새로 만들어지는 동아리의
+    `category`는 서버가 `"스터디"` 고정값으로 채운다(`ClubService.DEFAULT_CATEGORY`).
+    카테고리별 분류가 필요해지면 그때 선택 UI와 함께 재검토한다.
+  - 업로드된 사진은 로컬 디스크(`app.upload.dir`, 기본값 `uploads/clubs/`)에
+    저장되고, `/uploads/clubs/{파일명}` 경로로 정적 서빙된다(인증 불필요 —
+    `Image.network`가 토큰을 붙이지 않으므로). 여러 인스턴스로 배포하게 되면
+    이 로컬 디스크 방식은 S3 등으로 옮겨야 한다.

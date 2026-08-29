@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../../../app/network/api_client.dart';
@@ -6,8 +8,9 @@ import '../models/club_detail_model.dart';
 import '../models/club_model.dart';
 import 'club_data_source.dart';
 
-/// openapi.yaml의 GET /clubs/me, GET /clubs, PATCH /clubs/{clubId}/favorite,
-/// GET /clubs/{clubId}, POST /clubs/{clubId}/apply 계약과 매핑되는 실제 구현체.
+/// openapi.yaml의 GET /clubs/me, GET /clubs, POST /clubs, PATCH
+/// /clubs/{clubId}/favorite, GET /clubs/{clubId}, POST /clubs/{clubId}/apply
+/// 계약과 매핑되는 실제 구현체.
 final class ClubApiDataSourceImpl implements ClubDataSource {
   ClubApiDataSourceImpl(this._apiClient);
 
@@ -62,6 +65,27 @@ final class ClubApiDataSourceImpl implements ClubDataSource {
         '/clubs/$clubId/apply',
         data: {'selfIntroduction': selfIntroduction},
       );
+      return ApiEnvelope.unwrap(response.data, ClubDetailModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  /// POST /clubs는 사진 파일을 함께 받아야 해서 JSON이 아니라
+  /// multipart/form-data로 보낸다(백엔드 ClubController#createClub 참고).
+  @override
+  Future<ClubDetailModel> createClub({
+    required String name,
+    required String description,
+    File? thumbnail,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'name': name,
+        'description': description,
+        if (thumbnail != null) 'thumbnail': await MultipartFile.fromFile(thumbnail.path),
+      });
+      final response = await _apiClient.dio.post<Map<String, dynamic>>('/clubs', data: formData);
       return ApiEnvelope.unwrap(response.data, ClubDetailModel.fromJson);
     } on DioException catch (e) {
       throw ApiEnvelope.mapError(e);

@@ -26,7 +26,11 @@ public class WebSecurityConfig {
             "/api/v1/auth/login",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/h2-console/**"
+            "/h2-console/**",
+            // FileStorageService가 저장한 스터디 사진 등을 서빙하는 경로(WebMvcConfig).
+            // Image.network(thumbnailUrl)는 Authorization 헤더를 붙이지 않으므로 인증 없이
+            // 접근 가능해야 한다.
+            "/uploads/**"
     };
 
     @Bean

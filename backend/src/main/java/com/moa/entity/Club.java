@@ -52,4 +52,26 @@ public class Club extends BaseEntity {
      */
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    /**
+     * "스터디 등록" 화면(ClubService.createClub)에서 새 동아리를 만들 때 쓰는 팩토리.
+     *
+     * leaderName은 별도 입력칸이 없다 — 동아리를 만든 사용자가 곧 회장이므로
+     * User.getName()을 그대로 쓴다. category도 등록 화면에는 입력칸이 없어서
+     * ClubService.DEFAULT_CATEGORY 상수로 고정한다(카테고리 선택 UI는 이번
+     * 작업 범위 밖). memberCount는 생성 직후 ClubService가 만드는 사람을
+     * club_members에 바로 가입시키므로 1로 시작한다 — 이 값은 클래스 상단에
+     * 문서화된 것처럼 club_members를 실시간으로 세지 않는 저장된 값이라,
+     * 이후 실제 가입/탈퇴가 있어도 자동으로 갱신되지 않는다는 점은 동일하다.
+     */
+    public static Club create(String name, String leaderName, String category, String thumbnailUrl, String description) {
+        Club club = new Club();
+        club.name = name;
+        club.leaderName = leaderName;
+        club.category = category;
+        club.memberCount = 1;
+        club.thumbnailUrl = thumbnailUrl;
+        club.description = description;
+        return club;
+    }
 }

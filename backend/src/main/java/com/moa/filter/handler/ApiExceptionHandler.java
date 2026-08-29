@@ -6,10 +6,13 @@ import com.moa.filter.exception.ClubAlreadyJoinedException;
 import com.moa.filter.exception.ClubApplicationAlreadyPendingException;
 import com.moa.filter.exception.ClubMembershipNotFoundException;
 import com.moa.filter.exception.ClubNotFoundException;
+import com.moa.filter.exception.DuplicateClubNameException;
 import com.moa.filter.exception.DuplicateEmailException;
 import com.moa.filter.exception.DuplicateNicknameException;
+import com.moa.filter.exception.FileStorageException;
 import com.moa.filter.exception.FirebaseNotConfiguredException;
 import com.moa.filter.exception.InvalidAuthTokenException;
+import com.moa.filter.exception.InvalidClubNameException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -74,6 +77,25 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleClubApplicationAlreadyPending(ClubApplicationAlreadyPendingException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.failure(new ApiError("CLUB_APPLICATION_ALREADY_PENDING", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(InvalidClubNameException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidClubName(InvalidClubNameException e) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.failure(new ApiError("INVALID_CLUB_NAME", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(DuplicateClubNameException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDuplicateClubName(DuplicateClubNameException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(new ApiError("DUPLICATE_CLUB_NAME", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ApiResponse<Void>> handleFileStorage(FileStorageException e) {
+        log.error("파일 업로드에 실패했습니다.", e);
+        return ResponseEntity.internalServerError()
+                .body(ApiResponse.failure(new ApiError("FILE_UPLOAD_FAILED", e.getMessage(), List.of())));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

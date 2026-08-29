@@ -34,6 +34,9 @@ dependencies:
   # TechTalk 프로젝트와 동일한 패키지.
   flutter_svg: ^2.0.10+1
 
+  # "스터디 등록" 화면에서 갤러리 사진을 골라 썸네일로 업로드하는 데 사용.
+  image_picker: ^1.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

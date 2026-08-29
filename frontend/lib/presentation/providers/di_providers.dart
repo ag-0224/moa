@@ -15,6 +15,7 @@ import '../../features/club/models/club_model.dart';
 import '../../features/club/repositories/club_repository.dart';
 import '../../features/club/repositories/club_repository_impl.dart';
 import '../../features/club/usecases/apply_to_club_use_case.dart';
+import '../../features/club/usecases/create_club_use_case.dart';
 import '../../features/club/usecases/get_all_clubs_use_case.dart';
 import '../../features/club/usecases/get_club_detail_use_case.dart';
 import '../../features/club/usecases/get_my_clubs_use_case.dart';
@@ -27,6 +28,7 @@ import '../../features/user/data_source/user_api_data_source.dart';
 import '../../features/user/repositories/user_repository.dart';
 import '../../features/user/repositories/user_repository_impl.dart';
 import '../../features/user/usecases/complete_profile_use_case.dart';
+import '../../features/user/usecases/delete_account_use_case.dart';
 import '../../features/user/usecases/get_my_info_use_case.dart';
 
 /// Riverpod을 DI 컨테이너로 사용한다 (get_it 등 별도 서비스 로케이터 없음).
@@ -72,6 +74,9 @@ final getMyInfoUseCaseProvider = Provider((ref) => GetMyInfoUseCase(ref.watch(us
 final completeProfileUseCaseProvider =
     Provider((ref) => CompleteProfileUseCase(ref.watch(userRepositoryProvider)));
 
+final deleteAccountUseCaseProvider =
+    Provider((ref) => DeleteAccountUseCase(ref.watch(userRepositoryProvider)));
+
 final healthApiDataSourceProvider = Provider<HealthApiDataSource>((ref) {
   return HealthApiDataSourceImpl(ref.watch(apiClientProvider));
 });
@@ -102,6 +107,10 @@ final getClubDetailUseCaseProvider =
 
 final applyToClubUseCaseProvider =
     Provider((ref) => ApplyToClubUseCase(ref.watch(clubRepositoryProvider)));
+
+/// 메인 페이지 "스터디 등록" 버튼 → 등록 화면(ClubRegisterPage)이 쓰는 유스케이스.
+final createClubUseCaseProvider =
+    Provider((ref) => CreateClubUseCase(ref.watch(clubRepositoryProvider)));
 
 /// 메인 페이지(홈 피드)가 watch하는 "내가 속한(가입한) 동아리 목록".
 final myClubsProvider = FutureProvider<List<ClubModel>>((ref) {
