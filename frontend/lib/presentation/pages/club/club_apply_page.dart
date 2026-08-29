@@ -45,12 +45,19 @@ class _ClubApplyPageState extends ConsumerState<ClubApplyPage> {
       _errorText = null;
     });
 
+    // await 이후에 ScaffoldMessenger.of(context)/Navigator.of(context)를 호출하면,
+    // 그 사이에 사용자가 뒤로가기 등으로 화면을 벗어나 위젯이 deactivate된 경우
+    // "Looking up a deactivated widget's ancestor is unsafe" 에러가 난다.
+    // mounted 체크만으로는 막을 수 없으므로(디액티베이트된 상태에서도 mounted는
+    // true다), await 전에 미리 참조를 캡처해두고 그 참조만 사용한다.
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     try {
       await ref.read(applyToClubUseCaseProvider)(widget.clubId, text);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('지원서를 제출했어요. 승인을 기다려주세요.')));
-      Navigator.of(context).pop(true);
+      messenger.showSnackBar(const SnackBar(content: Text('지원서를 제출했어요. 승인을 기다려주세요.')));
+      navigator.pop(true);
     } catch (e) {
       if (!mounted) return;
       setState(() {
