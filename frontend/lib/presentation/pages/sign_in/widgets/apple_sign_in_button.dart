@@ -30,12 +30,12 @@ class AppleSignInButton extends StatelessWidget {
       isLoading: isLoading,
       backgroundColor: const Color(0xFF09090B),
       foregroundColor: Colors.white,
-      child: Row(
+      child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.apple, size: 24),
-          const SizedBox(width: 12),
-          const Text(
+          Icon(Icons.apple, size: 24),
+          SizedBox(width: 12),
+          Text(
             'Apple로 계속하기',
             style: TextStyle(
               fontSize: 16,
