@@ -15,6 +15,7 @@ import '../../features/attendance/repositories/attendance_repository.dart';
 import '../../features/attendance/repositories/attendance_repository_impl.dart';
 import '../../features/attendance/usecases/get_study_attendance_overview_use_case.dart';
 import '../../features/attendance/usecases/check_in_use_case.dart';
+import '../../features/attendance/usecases/use_vacation_use_case.dart';
 import '../../features/club/data_source/club_api_data_source.dart';
 import '../../features/club/data_source/club_data_source.dart';
 import '../../features/club/models/club_detail_model.dart';
@@ -156,6 +157,10 @@ final getStudyAttendanceOverviewUseCaseProvider = Provider(
 
 final checkInUseCaseProvider = Provider(
   (ref) => CheckInUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
+final useVacationUseCaseProvider = Provider(
+  (ref) => UseVacationUseCase(ref.watch(attendanceRepositoryProvider)),
 );
 
 /// 스터디 홈 화면의 출석 현황 탭이 watch하는 clubId별 출석 개요.

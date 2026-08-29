@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../models/attendance_exceptions.dart';
 import '../models/attendance_mark.dart';
 import '../models/member_attendance_model.dart';
 import '../models/study_attendance_overview_model.dart';
@@ -15,14 +16,22 @@ import 'attendance_data_source.dart';
 ///
 /// 멤버 목록 중 항상 0번째(isMe: true, 이름 "나")를 로그인한 사용자 본인
 /// 자리로 취급한다. 실제 인원 API가 없어서 "나"를 진짜로 식별할 방법이 없기
-/// 때문에 임시로 고정한 것이고, checkIn()이 건드리는 것도 이 자리뿐이다.
+/// 때문에 임시로 고정한 것이고, checkIn()/useVacation()이 건드리는 것도 이
+/// 자리뿐이다.
 class MockAttendanceDataSource implements AttendanceDataSource {
   static const _names = ['김민지', '이도현', '최유진', '정하은', '오지훈', '한소율'];
 
-  /// clubId별 "오늘 내가 출석 버튼을 눌렀는지" 상태. 이 데이터소스 인스턴스가
-  /// (di_providers.dart에서) 싱글턴으로 유지되는 동안만 살아있는 인메모리
-  /// 상태다 — 앱을 재시작하면 초기화된다.
+  /// 실제로는 스터디 대표가 "출석번호 확인" 화면(StudyManagementPage, 아직
+  /// 미구현)에서 매번 새로 발급하는 번호여야 하지만, 그 화면이 생기기 전까지는
+  /// 테스트용으로 고정된 4자리 번호를 정답으로 둔다.
+  static const String testAttendanceCode = '1234';
+
+  /// clubId별 "오늘 내가 출석번호를 맞혀서 출석 처리됐는지" 상태.
   final Map<int, bool> _checkedInToday = {};
+
+  /// clubId별 "오늘 내가 휴가를 쓰기로 했는지" 상태. checkIn과 배타적이라(둘
+  /// 다 될 수 없음) 한쪽을 선택하면 반대쪽 기록은 지운다.
+  final Map<int, bool> _vacationToday = {};
 
   @override
   Future<StudyAttendanceOverviewModel> getOverview(int clubId) async {
@@ -35,6 +44,7 @@ class MockAttendanceDataSource implements AttendanceDataSource {
     final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
     final todayIndex = now.weekday - 1; // 0=월 ... 6=일
     final iCheckedInToday = _checkedInToday[clubId] ?? false;
+    final iUsedVacationToday = _vacationToday[clubId] ?? false;
 
     final otherMemberCount = 3 + random.nextInt(4); // 나를 포함해 4~7명
     final members = List.generate(otherMemberCount + 1, (i) {
@@ -43,9 +53,11 @@ class MockAttendanceDataSource implements AttendanceDataSource {
       final weeklyMarks = List.generate(7, (dayIndex) {
         if (dayIndex > todayIndex) return AttendanceMark.upcoming;
         if (isMe && dayIndex == todayIndex) {
-          // "나"의 오늘 칸만 출석하기 버튼으로 실제로 바뀐다. 누르기 전까지는
-          // (다른 요일과 달리) 결석 처리하지 않고 "예정"으로 비워둔다.
-          return iCheckedInToday ? AttendanceMark.present : AttendanceMark.upcoming;
+          // "나"의 오늘 칸만 출석하기 버튼(출석번호 입력 또는 휴가 사용)으로
+          // 실제로 바뀐다. 아직 아무것도 선택하지 않았으면 "예정"으로 둔다.
+          if (iCheckedInToday) return AttendanceMark.present;
+          if (iUsedVacationToday) return AttendanceMark.vacation;
+          return AttendanceMark.upcoming;
         }
         // 결석/휴가는 드물게, 대부분은 출석으로 가중치를 둔다.
         final roll = random.nextInt(10);
@@ -73,8 +85,19 @@ class MockAttendanceDataSource implements AttendanceDataSource {
   }
 
   @override
-  Future<void> checkIn(int clubId) async {
+  Future<void> checkIn(int clubId, String code) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (code != testAttendanceCode) {
+      throw const InvalidAttendanceCodeException();
+    }
     _checkedInToday[clubId] = true;
+    _vacationToday.remove(clubId);
+  }
+
+  @override
+  Future<void> useVacation(int clubId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _vacationToday[clubId] = true;
+    _checkedInToday.remove(clubId);
   }
 }

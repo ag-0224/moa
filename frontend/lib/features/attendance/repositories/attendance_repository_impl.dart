@@ -13,7 +13,12 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
-  Future<void> checkIn(int clubId) {
-    return _dataSource.checkIn(clubId);
+  Future<void> checkIn(int clubId, String code) {
+    return _dataSource.checkIn(clubId, code);
+  }
+
+  @override
+  Future<void> useVacation(int clubId) {
+    return _dataSource.useVacation(clubId);
   }
 }
