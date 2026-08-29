@@ -8,6 +8,13 @@ import '../../features/auth/repositories/auth_repository.dart';
 import '../../features/auth/repositories/auth_repository_impl.dart';
 import '../../features/auth/usecases/sign_in_use_case.dart';
 import '../../features/auth/usecases/sign_out_use_case.dart';
+import '../../features/attendance/data_source/attendance_data_source.dart';
+import '../../features/attendance/data_source/mock_attendance_data_source.dart';
+import '../../features/attendance/models/study_attendance_overview_model.dart';
+import '../../features/attendance/repositories/attendance_repository.dart';
+import '../../features/attendance/repositories/attendance_repository_impl.dart';
+import '../../features/attendance/usecases/get_study_attendance_overview_use_case.dart';
+import '../../features/attendance/usecases/check_in_use_case.dart';
 import '../../features/club/data_source/club_api_data_source.dart';
 import '../../features/club/data_source/club_data_source.dart';
 import '../../features/club/models/club_detail_model.dart';
@@ -127,4 +134,32 @@ final allClubsProvider = FutureProvider<List<ClubModel>>((ref) {
 /// 불러와서 applicationStatus 변경을 반영한다.
 final clubDetailProvider = FutureProvider.family<ClubDetailModel, int>((ref, clubId) {
   return ref.watch(getClubDetailUseCaseProvider)(clubId);
+});
+
+/// 스터디(동아리) 출석 현황 탭 전용 DI.
+///
+/// AttendanceDataSource는 아직 MockAttendanceDataSource 하나뿐이다(백엔드에
+/// 출석 API가 없음, features/attendance/data_source/attendance_data_source.dart
+/// 참고). 실제 API가 생기면 이 Provider 하나만 새 구현체로 바꿔 끼우면 되고,
+/// Repository/UseCase/화면 쪽 코드는 그대로 재사용된다.
+final attendanceDataSourceProvider = Provider<AttendanceDataSource>((ref) {
+  return MockAttendanceDataSource();
+});
+
+final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
+  return AttendanceRepositoryImpl(ref.watch(attendanceDataSourceProvider));
+});
+
+final getStudyAttendanceOverviewUseCaseProvider = Provider(
+  (ref) => GetStudyAttendanceOverviewUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
+final checkInUseCaseProvider = Provider(
+  (ref) => CheckInUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
+/// 스터디 홈 화면의 출석 현황 탭이 watch하는 clubId별 출석 개요.
+final studyAttendanceOverviewProvider =
+    FutureProvider.family<StudyAttendanceOverviewModel, int>((ref, clubId) {
+  return ref.watch(getStudyAttendanceOverviewUseCaseProvider)(clubId);
 });

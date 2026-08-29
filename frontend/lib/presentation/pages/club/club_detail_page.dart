@@ -12,7 +12,7 @@ import 'club_apply_page.dart';
 /// 소개 글 + "지원 하기" 버튼). 사용자가 제공한 스크린샷 기준으로 만들었다.
 ///
 /// 이미 가입한 동아리는 이 화면을 거치지 않고 바로 다른 화면(현재는
-/// ClubHomePlaceholderPage)으로 이동한다 — home_page.dart의 탭 처리 참고.
+/// StudyHomePage)으로 이동한다 — home_page.dart의 탭 처리 참고.
 class ClubDetailPage extends ConsumerWidget {
   const ClubDetailPage({super.key, required this.clubId});
 
