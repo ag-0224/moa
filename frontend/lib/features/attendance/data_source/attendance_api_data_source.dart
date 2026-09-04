@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../app/network/api_client.dart';
 import '../../../core/network/api_envelope.dart';
 import '../../../core/network/api_exception.dart';
+import '../models/attendance_code_model.dart';
 import '../models/attendance_exceptions.dart';
 import '../models/my_study_info_model.dart';
 import '../models/study_attendance_overview_model.dart';
@@ -66,6 +67,16 @@ final class AttendanceApiDataSourceImpl implements AttendanceDataSource {
         queryParameters: {'year': month.year, 'month': month.month},
       );
       return ApiEnvelope.unwrap(response.data, MyStudyInfoModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<AttendanceCodeModel> getTodayCode(int clubId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>('/clubs/$clubId/attendance/code');
+      return ApiEnvelope.unwrap(response.data, AttendanceCodeModel.fromJson);
     } on DioException catch (e) {
       throw ApiEnvelope.mapError(e);
     }

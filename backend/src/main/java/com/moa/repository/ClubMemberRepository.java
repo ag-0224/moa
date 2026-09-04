@@ -25,4 +25,11 @@ public interface ClubMemberRepository extends JpaRepository<ClubMember, Long> {
      * 먼저 지워야 FK 제약 위반 없이 삭제할 수 있다.
      */
     void deleteByUserId(Long userId);
+
+    /**
+     * 스터디 삭제(ClubService.deleteClub) 시 club_members에 남아있는 가입
+     * 행을 먼저 정리하기 위해 쓴다. UserService.deleteAccount의
+     * deleteByUserId와 같은 이유(FK 제약)로 필요하다.
+     */
+    void deleteByClubId(Long clubId);
 }

@@ -17,6 +17,8 @@ import '../../features/attendance/usecases/get_study_attendance_overview_use_cas
 import '../../features/attendance/usecases/check_in_use_case.dart';
 import '../../features/attendance/usecases/use_vacation_use_case.dart';
 import '../../features/attendance/usecases/get_my_study_info_use_case.dart';
+import '../../features/attendance/usecases/get_today_attendance_code_use_case.dart';
+import '../../features/attendance/models/attendance_code_model.dart';
 import '../../features/attendance/models/my_study_info_model.dart';
 import '../../features/club/data_source/club_api_data_source.dart';
 import '../../features/club/data_source/club_data_source.dart';
@@ -29,6 +31,8 @@ import '../../features/club/repositories/club_repository_impl.dart';
 import '../../features/club/usecases/apply_to_club_use_case.dart';
 import '../../features/club/usecases/approve_club_application_use_case.dart';
 import '../../features/club/usecases/create_club_use_case.dart';
+import '../../features/club/usecases/delete_club_use_case.dart';
+import '../../features/club/usecases/update_club_use_case.dart';
 import '../../features/club/usecases/get_all_clubs_use_case.dart';
 import '../../features/club/usecases/get_club_detail_use_case.dart';
 import '../../features/club/usecases/get_club_members_use_case.dart';
@@ -129,6 +133,14 @@ final applyToClubUseCaseProvider =
 final createClubUseCaseProvider =
     Provider((ref) => CreateClubUseCase(ref.watch(clubRepositoryProvider)));
 
+/// 스터디 관리 페이지 "스터디 정보 수정" 화면(StudyEditPage)이 쓰는 유스케이스.
+final updateClubUseCaseProvider =
+    Provider((ref) => UpdateClubUseCase(ref.watch(clubRepositoryProvider)));
+
+/// 스터디 관리 페이지 "스터디 삭제" 확인 다이얼로그가 쓰는 유스케이스.
+final deleteClubUseCaseProvider =
+    Provider((ref) => DeleteClubUseCase(ref.watch(clubRepositoryProvider)));
+
 /// 메인 페이지(홈 피드)가 watch하는 "내가 속한(가입한) 동아리 목록".
 final myClubsProvider = FutureProvider<List<ClubModel>>((ref) {
   return ref.watch(getMyClubsUseCaseProvider)();
@@ -202,6 +214,11 @@ final getMyStudyInfoUseCaseProvider = Provider(
   (ref) => GetMyStudyInfoUseCase(ref.watch(attendanceRepositoryProvider)),
 );
 
+/// 스터디 관리 페이지 "출석번호 확인" 화면(StudyAttendanceCodePage)이 쓰는 유스케이스.
+final getTodayAttendanceCodeUseCaseProvider = Provider(
+  (ref) => GetTodayAttendanceCodeUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
 /// 스터디 홈 화면의 "내 정보" 탭이 watch하는 (clubId, 조회할 달)별 월간
 /// 출석/휴가 정보. 화살표나 달력으로 다른 달/연도를 선택하면 month가
 /// 바뀌면서 새로운 FutureProvider 인스턴스로 자동 캐시된다.
@@ -214,4 +231,10 @@ final myStudyInfoProvider =
 final studyAttendanceOverviewProvider =
     FutureProvider.family<StudyAttendanceOverviewModel, int>((ref, clubId) {
   return ref.watch(getStudyAttendanceOverviewUseCaseProvider)(clubId);
+});
+
+/// 스터디 관리 페이지 "출석번호 확인" 화면이 watch하는 clubId별 오늘의
+/// 출석번호. 동아리장이 아니면 서버가 403 NOT_CLUB_LEADER를 내려준다.
+final todayAttendanceCodeProvider = FutureProvider.family<AttendanceCodeModel, int>((ref, clubId) {
+  return ref.watch(getTodayAttendanceCodeUseCaseProvider)(clubId);
 });

@@ -95,6 +95,39 @@ final class ClubApiDataSourceImpl implements ClubDataSource {
     }
   }
 
+  /// PATCH /clubs/{clubId}도 사진 파일을 함께 받을 수 있어야 해서 createClub과
+  /// 같은 이유로 multipart/form-data로 보낸다(백엔드 ClubController#updateClub
+  /// 참고). thumbnail이 null이면 그 파트 자체를 보내지 않아서, 백엔드가 기존
+  /// 사진을 그대로 유지한다.
+  @override
+  Future<ClubDetailModel> updateClub({
+    required int clubId,
+    required String name,
+    required String description,
+    File? thumbnail,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'name': name,
+        'description': description,
+        if (thumbnail != null) 'thumbnail': await MultipartFile.fromFile(thumbnail.path),
+      });
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>('/clubs/$clubId', data: formData);
+      return ApiEnvelope.unwrap(response.data, ClubDetailModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<void> deleteClub(int clubId) async {
+    try {
+      await _apiClient.dio.delete<Map<String, dynamic>>('/clubs/$clubId');
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
   @override
   Future<List<ClubMemberModel>> getClubMembers(int clubId) async {
     try {

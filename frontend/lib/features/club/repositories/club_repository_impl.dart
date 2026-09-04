@@ -37,6 +37,18 @@ final class ClubRepositoryImpl implements ClubRepository {
       _clubDataSource.createClub(name: name, description: description, thumbnail: thumbnail);
 
   @override
+  Future<ClubDetailModel> updateClub({
+    required int clubId,
+    required String name,
+    required String description,
+    File? thumbnail,
+  }) =>
+      _clubDataSource.updateClub(clubId: clubId, name: name, description: description, thumbnail: thumbnail);
+
+  @override
+  Future<void> deleteClub(int clubId) => _clubDataSource.deleteClub(clubId);
+
+  @override
   Future<List<ClubMemberModel>> getClubMembers(int clubId) => _clubDataSource.getClubMembers(clubId);
 
   @override
