@@ -2,8 +2,11 @@ package com.moa.filter.handler;
 
 import com.moa.dto.response.ApiError;
 import com.moa.dto.response.ApiResponse;
+import com.moa.filter.exception.AttendanceCodeNotIssuedException;
 import com.moa.filter.exception.ClubAlreadyJoinedException;
 import com.moa.filter.exception.ClubApplicationAlreadyPendingException;
+import com.moa.filter.exception.ClubApplicationNotFoundException;
+import com.moa.filter.exception.ClubApplicationNotPendingException;
 import com.moa.filter.exception.ClubMembershipNotFoundException;
 import com.moa.filter.exception.ClubNotFoundException;
 import com.moa.filter.exception.DuplicateClubNameException;
@@ -11,8 +14,12 @@ import com.moa.filter.exception.DuplicateEmailException;
 import com.moa.filter.exception.DuplicateNicknameException;
 import com.moa.filter.exception.FileStorageException;
 import com.moa.filter.exception.FirebaseNotConfiguredException;
+import com.moa.filter.exception.InvalidAttendanceCodeException;
 import com.moa.filter.exception.InvalidAuthTokenException;
 import com.moa.filter.exception.InvalidClubNameException;
+import com.moa.filter.exception.InvalidLeaderTransferException;
+import com.moa.filter.exception.NotClubLeaderException;
+import com.moa.filter.exception.VacationLimitExceededException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -89,6 +96,48 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDuplicateClubName(DuplicateClubNameException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.failure(new ApiError("DUPLICATE_CLUB_NAME", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(NotClubLeaderException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotClubLeader(NotClubLeaderException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.failure(new ApiError("NOT_CLUB_LEADER", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(InvalidLeaderTransferException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidLeaderTransfer(InvalidLeaderTransferException e) {
+        return ResponseEntity.badRequest()
+                .body(ApiResponse.failure(new ApiError("INVALID_LEADER_TRANSFER", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(ClubApplicationNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClubApplicationNotFound(ClubApplicationNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(new ApiError("CLUB_APPLICATION_NOT_FOUND", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(ClubApplicationNotPendingException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClubApplicationNotPending(ClubApplicationNotPendingException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(new ApiError("CLUB_APPLICATION_NOT_PENDING", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(AttendanceCodeNotIssuedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAttendanceCodeNotIssued(AttendanceCodeNotIssuedException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.failure(new ApiError("ATTENDANCE_CODE_NOT_ISSUED", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(InvalidAttendanceCodeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidAttendanceCode(InvalidAttendanceCodeException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(new ApiError("INVALID_ATTENDANCE_CODE", e.getMessage(), List.of())));
+    }
+
+    @ExceptionHandler(VacationLimitExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleVacationLimitExceeded(VacationLimitExceededException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.failure(new ApiError("VACATION_LIMIT_EXCEEDED", e.getMessage(), List.of())));
     }
 
     @ExceptionHandler(FileStorageException.class)

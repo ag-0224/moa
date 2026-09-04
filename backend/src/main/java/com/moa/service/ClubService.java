@@ -1,7 +1,9 @@
 package com.moa.service;
 
 import com.moa.constant.ClubApplicationStatus;
+import com.moa.dto.response.ClubApplicationResponse;
 import com.moa.dto.response.ClubDetailResponse;
+import com.moa.dto.response.ClubMemberSummaryResponse;
 import com.moa.dto.response.ClubResponse;
 import com.moa.entity.Club;
 import com.moa.entity.ClubApplication;
@@ -9,11 +11,15 @@ import com.moa.entity.ClubMember;
 import com.moa.entity.User;
 import com.moa.filter.exception.ClubAlreadyJoinedException;
 import com.moa.filter.exception.ClubApplicationAlreadyPendingException;
+import com.moa.filter.exception.ClubApplicationNotFoundException;
+import com.moa.filter.exception.ClubApplicationNotPendingException;
 import com.moa.filter.exception.ClubMembershipNotFoundException;
 import com.moa.filter.exception.ClubNotFoundException;
 import com.moa.filter.exception.DuplicateClubNameException;
 import com.moa.filter.exception.InvalidAuthTokenException;
 import com.moa.filter.exception.InvalidClubNameException;
+import com.moa.filter.exception.InvalidLeaderTransferException;
+import com.moa.filter.exception.NotClubLeaderException;
 import com.moa.repository.ClubApplicationRepository;
 import com.moa.repository.ClubMemberRepository;
 import com.moa.repository.ClubRepository;
@@ -54,7 +60,10 @@ public class ClubService {
     public List<ClubResponse> getMyClubs(Long userId) {
         List<ClubMember> memberships = clubMemberRepository.findByUserId(userId);
         return memberships.stream()
-                .map(membership -> ClubResponse.of(membership.getClub(), true, membership.isFavorite()))
+                .map(membership -> {
+                    Club club = membership.getClub();
+                    return ClubResponse.of(club, true, membership.isFavorite(), club.isLedBy(userId));
+                })
                 .toList();
     }
 
@@ -72,7 +81,7 @@ public class ClubService {
                     ClubMember membership = membershipByClubId.get(club.getId());
                     boolean joined = membership != null;
                     boolean favorite = joined && membership.isFavorite();
-                    return ClubResponse.of(club, joined, favorite);
+                    return ClubResponse.of(club, joined, favorite, club.isLedBy(userId));
                 })
                 .toList();
     }
@@ -87,7 +96,8 @@ public class ClubService {
                 .orElseThrow(() -> new ClubMembershipNotFoundException("가입한 동아리만 즐겨찾기할 수 있어요."));
 
         membership.changeFavorite(favorite);
-        return ClubResponse.of(membership.getClub(), true, membership.isFavorite());
+        Club club = membership.getClub();
+        return ClubResponse.of(club, true, membership.isFavorite(), club.isLedBy(userId));
     }
 
     /**
@@ -99,13 +109,13 @@ public class ClubService {
         Optional<ClubMember> membership = clubMemberRepository.findByClubIdAndUserId(clubId, userId);
 
         if (membership.isPresent()) {
-            return ClubDetailResponse.of(club, true, membership.get().isFavorite(), null);
+            return ClubDetailResponse.of(club, true, membership.get().isFavorite(), club.isLedBy(userId), null);
         }
 
         ClubApplicationStatus applicationStatus = clubApplicationRepository.findByClubIdAndUserId(clubId, userId)
                 .map(ClubApplication::getStatus)
                 .orElse(null);
-        return ClubDetailResponse.of(club, false, false, applicationStatus);
+        return ClubDetailResponse.of(club, false, false, false, applicationStatus);
     }
 
     /**
@@ -128,12 +138,12 @@ public class ClubService {
                 throw new ClubApplicationAlreadyPendingException("이미 승인 대기 중인 신청서가 있어요.");
             }
             application.resubmit(selfIntroduction);
-            return ClubDetailResponse.of(club, false, false, application.getStatus());
+            return ClubDetailResponse.of(club, false, false, false, application.getStatus());
         }
 
         User user = findUserOrThrow(userId);
         ClubApplication application = clubApplicationRepository.save(ClubApplication.apply(club, user, selfIntroduction));
-        return ClubDetailResponse.of(club, false, false, application.getStatus());
+        return ClubDetailResponse.of(club, false, false, false, application.getStatus());
     }
 
     /**
@@ -156,11 +166,110 @@ public class ClubService {
                 : fileStorageService.storeClubThumbnail(thumbnail);
 
         Club club = clubRepository.save(
-                Club.create(trimmedName, leader.getName(), DEFAULT_CATEGORY, thumbnailUrl, description)
+                Club.create(trimmedName, leader, DEFAULT_CATEGORY, thumbnailUrl, description)
         );
         clubMemberRepository.save(ClubMember.join(club, leader));
 
-        return ClubDetailResponse.of(club, true, false, null);
+        return ClubDetailResponse.of(club, true, false, true, null);
+    }
+
+    /**
+     * 관리자 권한 넘기기 화면(멤버 선택)에서 쓰는 동아리 멤버 목록. 가입한
+     * 사용자만 조회할 수 있다 — 가입하지 않았으면 CLUB_MEMBERSHIP_NOT_FOUND.
+     */
+    public List<ClubMemberSummaryResponse> getClubMembers(Long userId, Long clubId) {
+        Club club = findClubOrThrow(clubId);
+        clubMemberRepository.findByClubIdAndUserId(clubId, userId)
+                .orElseThrow(() -> new ClubMembershipNotFoundException("가입한 동아리만 멤버 목록을 볼 수 있어요."));
+
+        return clubMemberRepository.findByClubId(clubId).stream()
+                .map(member -> ClubMemberSummaryResponse.of(member, club.isLedBy(member.getUser().getId())))
+                .toList();
+    }
+
+    /**
+     * 관리자(동아리장) 권한 넘기기. 현재 동아리장만 호출할 수 있고(아니면
+     * NotClubLeaderException), 대상은 반드시 이 동아리의 기존 가입 멤버여야
+     * 한다(아니면 ClubMembershipNotFoundException). 자기 자신에게 넘기려
+     * 하면 InvalidLeaderTransferException을 던진다.
+     */
+    @Transactional
+    public ClubDetailResponse transferLeadership(Long userId, Long clubId, Long newLeaderId) {
+        Club club = findClubOrThrow(clubId);
+        requireLeader(club, userId);
+
+        if (newLeaderId.equals(userId)) {
+            throw new InvalidLeaderTransferException("이미 관리자인 사용자예요.");
+        }
+
+        ClubMember newLeaderMembership = clubMemberRepository.findByClubIdAndUserId(clubId, newLeaderId)
+                .orElseThrow(() -> new ClubMembershipNotFoundException("이 동아리의 가입 멤버에게만 권한을 넘길 수 있어요."));
+        ClubMember callerMembership = clubMemberRepository.findByClubIdAndUserId(clubId, userId)
+                .orElseThrow(() -> new ClubMembershipNotFoundException("가입한 동아리가 아니에요."));
+
+        club.changeLeader(newLeaderMembership.getUser());
+
+        // 넘긴 직후 호출한 사용자는 더 이상 동아리장이 아니므로 leader=false로 내려준다.
+        return ClubDetailResponse.of(club, true, callerMembership.isFavorite(), false, null);
+    }
+
+    /**
+     * 가입 신청 목록(관리자 전용). 아직 처리하지 않은 PENDING 신청서만
+     * 내려준다 — APPROVED는 멤버 목록에서 이미 보이고, REJECTED는 더 조치할
+     * 게 없다.
+     */
+    public List<ClubApplicationResponse> getPendingApplications(Long userId, Long clubId) {
+        Club club = findClubOrThrow(clubId);
+        requireLeader(club, userId);
+
+        return clubApplicationRepository.findByClubIdAndStatus(clubId, ClubApplicationStatus.PENDING).stream()
+                .map(ClubApplicationResponse::of)
+                .toList();
+    }
+
+    /**
+     * 가입 신청 승인(관리자 전용). club_members에 새 행을 만들어 실제로
+     * 가입 처리하고 memberCount를 +1 한다. 이미 APPROVED/REJECTED로 처리된
+     * 신청서를 다시 승인하려 하면 CLUB_APPLICATION_NOT_PENDING을 던진다
+     * (memberCount 중복 증가를 막기 위해서다).
+     */
+    @Transactional
+    public ClubApplicationResponse approveApplication(Long userId, Long clubId, Long applicationId) {
+        Club club = findClubOrThrow(clubId);
+        requireLeader(club, userId);
+        ClubApplication application = findPendingApplicationOrThrow(clubId, applicationId);
+
+        application.approve();
+        clubMemberRepository.save(ClubMember.join(club, application.getUser()));
+        club.incrementMemberCount();
+
+        return ClubApplicationResponse.of(application);
+    }
+
+    /**
+     * 가입 신청 거절(관리자 전용). 신청서 상태만 REJECTED로 바꾸고
+     * club_members에는 변화가 없다. 지원자는 이후 POST /clubs/{clubId}/apply로
+     * 재신청할 수 있다.
+     */
+    @Transactional
+    public ClubApplicationResponse rejectApplication(Long userId, Long clubId, Long applicationId) {
+        Club club = findClubOrThrow(clubId);
+        requireLeader(club, userId);
+        ClubApplication application = findPendingApplicationOrThrow(clubId, applicationId);
+
+        application.reject();
+
+        return ClubApplicationResponse.of(application);
+    }
+
+    private ClubApplication findPendingApplicationOrThrow(Long clubId, Long applicationId) {
+        ClubApplication application = clubApplicationRepository.findById(applicationId)
+                .filter(candidate -> candidate.getClub().getId().equals(clubId))
+                .orElseThrow(() -> new ClubApplicationNotFoundException("존재하지 않는 신청서예요."));
+        if (application.getStatus() != ClubApplicationStatus.PENDING) {
+            throw new ClubApplicationNotPendingException("이미 처리된 신청서예요.");
+        }
+        return application;
     }
 
     private String validateName(String name) {
@@ -185,5 +294,16 @@ public class ClubService {
     private User findUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidAuthTokenException("사용자를 찾을 수 없습니다."));
+    }
+
+    /**
+     * 관리자 권한 넘기기/가입 신청 승인·거절 등 동아리장 전용 액션의 공통
+     * 인가 검사. leaderName(표시용 문자열) 비교가 아니라 실제 leader_id FK
+     * 기준이라 동명이인에 안전하다.
+     */
+    private void requireLeader(Club club, Long userId) {
+        if (!club.isLedBy(userId)) {
+            throw new NotClubLeaderException("동아리장만 할 수 있어요.");
+        }
     }
 }

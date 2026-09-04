@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../features/club/models/club_model.dart';
-import '../../providers/auth/auth_controller.dart';
-import '../../providers/auth/auth_state.dart';
 import 'study_management_page.dart';
 import 'tabs/study_attendance_tab.dart';
 import 'tabs/study_board_placeholder_tab.dart';
-import 'tabs/study_my_info_placeholder_tab.dart';
+import 'tabs/study_my_info_tab.dart';
 
 /// 가입한 스터디(동아리)를 눌렀을 때 들어오는 전용 화면.
 ///
 /// AppBar(스터디 이름 + 관리자 전용 설정 버튼) + 3개 탭(출석현황/게시판/내 정보)
 /// 셸 역할만 하고, home_page.dart에서 ClubHomePlaceholderPage를 대체한다.
 ///
-/// 이번 작업 범위는 "출석현황" 탭까지라, 게시판/내 정보 탭과 관리자 설정
-/// 화면(StudyManagementPage)은 아직 준비 중인 자리표시자다(각 파일 주석 참고).
+/// 이번 작업 범위는 "출석현황" 탭까지라, 게시판/내 정보 탭은 아직 준비 중인
+/// 자리표시자다(각 파일 주석 참고). 관리자 설정 화면(StudyManagementPage)은
+/// clubs.leader_id 인프라가 생기면서 실제로 연결됐다.
 class StudyHomePage extends ConsumerWidget {
   const StudyHomePage({super.key, required this.club});
 
@@ -23,23 +22,17 @@ class StudyHomePage extends ConsumerWidget {
 
   static const int _tabCount = 3;
 
-  /// 로그인한 사용자가 이 스터디의 대표(회장)인지 임시로 판별한다.
-  ///
-  /// 백엔드에 클럽별 "내 역할"(leaderId/role 등) 필드가 아직 없어서
-  /// (docs/API_CONTRACT.md, openapi.yaml Club/ClubDetail 스키마 참고) 지금은
-  /// 이름 문자열이 club.leaderName과 같은지로 대신 판별한다. 동명이인이 있으면
-  /// 잘못 판별될 수 있는 임시방편이므로, 정확히 판별하려면 계약 변경(예: Club에
-  /// isLeader 또는 memberRole 필드 추가, $moa-change-api-contract)이 필요하다.
-  bool _isLeader(WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
-    if (authState is! AuthAuthenticated) return false;
-    final myName = authState.user.nickname ?? authState.user.name;
-    return myName == club.leaderName;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLeader = _isLeader(ref);
+    // club.isLeader는 서버가 clubs.leader_id와 로그인한 사용자 ID를 비교해서
+    // 채워주는 값이다(GET /clubs, GET /clubs/me, GET /clubs/{clubId} 공통) —
+    // 예전에는 이 필드가 없어서 닉네임/이름 문자열을 club.leaderName과
+    // 비교하는 임시방편을 썼는데, 동명이인이 있으면 잘못 판별될 수 있는
+    // 보안 구멍이었다. 다만 이 club 값 자체는 화면에 들어올 때 전달받은
+    // 스냅샷이라, 이 화면 안에서 관리자 권한을 넘기면(TransferLeadershipPage)
+    // 목록 화면으로 돌아갈 때까지는 갱신되지 않는다 — 그래서 권한 넘기기는
+    // 성공 시 스터디 목록까지 pop해서 나간다.
+    final isLeader = club.isLeader;
 
     return DefaultTabController(
       length: _tabCount,
@@ -92,7 +85,7 @@ class StudyHomePage extends ConsumerWidget {
           children: [
             StudyAttendanceTab(clubId: club.id),
             const StudyBoardPlaceholderTab(),
-            const StudyMyInfoPlaceholderTab(),
+            StudyMyInfoTab(clubId: club.id),
           ],
         ),
       ),

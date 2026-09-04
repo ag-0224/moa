@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../../../features/club/models/club_model.dart';
+import 'club_applications_page.dart';
+import 'transfer_leadership_page.dart';
 
 const _grayText = Color(0xFF8B8B8B);
 
-/// 스터디 관리 화면(정보 수정 / 출석번호 확인 / 스터디 삭제)의 자리표시자.
+/// 스터디 관리 화면. AppBar의 설정 버튼(관리자 전용, study_home_page.dart)이
+/// 들어오는 곳이다.
 ///
-/// 이번 작업 범위는 "출석현황 탭"까지라 실제 관리 기능은 아직 구현하지
-/// 않았다. AppBar의 설정 버튼(관리자 전용)이 들어갈 화면이 있어야 해서
-/// 우선 메뉴 3개를 비활성 상태로 보여준다. 실제 구현 시 각 메뉴는 별도
-/// 이슈로 나누는 게 좋다: 정보 수정(계약 변경 없음, PATCH 필요할 수 있음),
+/// "가입 신청 관리"와 "관리자 권한 넘기기"는 clubs.leader_id 인프라가 생기면서
+/// 실제 화면으로 연결했다. 나머지 세 메뉴(정보 수정/출석번호 확인/스터디
+/// 삭제)는 이번 변경 범위 밖이라 여전히 "준비중" 자리표시자다 — 각각 별도
+/// 이슈로 남겨둔다: 정보 수정(계약 변경 없음, PATCH 필요할 수 있음),
 /// 출석번호 확인(신규 API), 스터디 삭제(신규 API + 확인 다이얼로그).
 class StudyManagementPage extends StatelessWidget {
   const StudyManagementPage({super.key, required this.club});
@@ -38,14 +41,29 @@ class StudyManagementPage extends StatelessWidget {
       body: SafeArea(
         child: ListView(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Text(
-                '${club.name} 관리 기능은 아직 준비중이에요.',
-                style: const TextStyle(fontSize: 13, color: _grayText),
-              ),
-            ),
             const _ManagementMenuTile(icon: Icons.edit_outlined, label: '스터디 정보 수정'),
+            const Divider(height: 1, color: Color(0xFFEFEFEF)),
+            _ManagementMenuTile(
+              icon: Icons.how_to_reg_outlined,
+              label: '가입 신청 관리',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ClubApplicationsPage(clubId: club.id)),
+                );
+              },
+            ),
+            const Divider(height: 1, color: Color(0xFFEFEFEF)),
+            _ManagementMenuTile(
+              icon: Icons.admin_panel_settings_outlined,
+              label: '관리자 권한 넘기기',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => TransferLeadershipPage(clubId: club.id, clubName: club.name),
+                  ),
+                );
+              },
+            ),
             const Divider(height: 1, color: Color(0xFFEFEFEF)),
             const _ManagementMenuTile(icon: Icons.badge_outlined, label: '출석번호 확인'),
             const Divider(height: 1, color: Color(0xFFEFEFEF)),
@@ -58,27 +76,37 @@ class StudyManagementPage extends StatelessWidget {
 }
 
 class _ManagementMenuTile extends StatelessWidget {
-  const _ManagementMenuTile({required this.icon, required this.label, this.isDanger = false});
+  const _ManagementMenuTile({required this.icon, required this.label, this.isDanger = false, this.onTap});
 
   final IconData icon;
   final String label;
   final bool isDanger;
 
+  /// null이면 아직 연결되지 않은 메뉴라 "준비중" 배지를 보여주고 탭해도
+  /// 아무 동작을 하지 않는다.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    // 아직 기능이 연결되지 않아 항상 비활성(회색/연한 빨강) 상태로만 보여준다.
-    final color = isDanger ? const Color(0xFFE57373) : _grayText;
+    final isReady = onTap != null;
+    final color = isReady ? Colors.black : (isDanger ? const Color(0xFFE57373) : _grayText);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 16),
-          Text(label, style: TextStyle(fontSize: 16, color: color, fontWeight: FontWeight.w500)),
-          const Spacer(),
-          const Text('준비중', style: TextStyle(fontSize: 12, color: _grayText)),
-        ],
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(width: 16),
+            Text(label, style: TextStyle(fontSize: 16, color: color, fontWeight: FontWeight.w500)),
+            const Spacer(),
+            if (isReady)
+              const Icon(Icons.chevron_right, color: _grayText)
+            else
+              const Text('준비중', style: TextStyle(fontSize: 12, color: _grayText)),
+          ],
+        ),
       ),
     );
   }

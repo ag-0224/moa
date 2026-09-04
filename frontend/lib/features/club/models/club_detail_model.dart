@@ -14,6 +14,7 @@ class ClubDetailModel {
     this.description,
     this.thumbnailUrl,
     this.isFavorite = false,
+    this.isLeader = false,
   });
 
   final int id;
@@ -25,6 +26,10 @@ class ClubDetailModel {
   final String? thumbnailUrl;
   final bool isJoined;
   final bool isFavorite;
+
+  /// 로그인한 사용자가 이 동아리의 관리자(동아리장)인지. ClubModel.isLeader와
+  /// 같은 방식(clubs.leader_id 기준)으로 서버가 채워준다.
+  final bool isLeader;
 
   /// isJoined가 true면 항상 ClubApplicationStatus.none이다.
   final ClubApplicationStatus applicationStatus;
@@ -40,6 +45,7 @@ class ClubDetailModel {
       thumbnailUrl: json['thumbnailUrl'] as String?,
       isJoined: json['joined'] as bool? ?? false,
       isFavorite: json['favorite'] as bool? ?? false,
+      isLeader: json['leader'] as bool? ?? false,
       applicationStatus: ClubApplicationStatus.fromJson(json['applicationStatus'] as String?),
     );
   }

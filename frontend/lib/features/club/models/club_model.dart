@@ -17,6 +17,7 @@ class ClubModel {
     required this.isJoined,
     this.thumbnailUrl,
     this.isFavorite = false,
+    this.isLeader = false,
   });
 
   final int id;
@@ -36,6 +37,12 @@ class ClubModel {
   final String? thumbnailUrl;
   final bool isFavorite;
 
+  /// 로그인한 사용자가 이 동아리의 관리자(동아리장)인지. clubs.leader_id와
+  /// 요청자 ID를 서버가 비교해서 내려주는 값이라(leaderName 문자열 비교가
+  /// 아님), 동명이인이 있어도 정확하다. StudyHomePage가 "스터디 관리"
+  /// 설정 버튼을 보여줄지 이 값으로 판단한다.
+  final bool isLeader;
+
   ClubModel copyWith({bool? isFavorite}) {
     return ClubModel(
       id: id,
@@ -46,6 +53,7 @@ class ClubModel {
       isJoined: isJoined,
       thumbnailUrl: thumbnailUrl,
       isFavorite: isFavorite ?? this.isFavorite,
+      isLeader: isLeader,
     );
   }
 
@@ -59,6 +67,7 @@ class ClubModel {
       isJoined: json['joined'] as bool? ?? true,
       thumbnailUrl: json['thumbnailUrl'] as String?,
       isFavorite: json['favorite'] as bool? ?? false,
+      isLeader: json['leader'] as bool? ?? false,
     );
   }
 }

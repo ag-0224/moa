@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import '../models/club_application_model.dart';
 import '../models/club_detail_model.dart';
+import '../models/club_member_model.dart';
 import '../models/club_model.dart';
 
 abstract interface class ClubDataSource {
@@ -27,4 +29,20 @@ abstract interface class ClubDataSource {
     required String description,
     File? thumbnail,
   });
+
+  /// 관리자 권한 넘기기 화면(멤버 선택)이 쓰는 동아리 멤버 목록.
+  Future<List<ClubMemberModel>> getClubMembers(int clubId);
+
+  /// 관리자(동아리장) 권한을 다른 가입 멤버에게 넘긴다. 현재 동아리장만
+  /// 호출할 수 있다.
+  Future<ClubDetailModel> transferLeadership(int clubId, int newLeaderId);
+
+  /// 가입 신청 관리 화면의 대기 중인 신청서 목록(관리자 전용).
+  Future<List<ClubApplicationModel>> getPendingApplications(int clubId);
+
+  /// 가입 신청 승인(관리자 전용).
+  Future<ClubApplicationModel> approveApplication(int clubId, int applicationId);
+
+  /// 가입 신청 거절(관리자 전용).
+  Future<ClubApplicationModel> rejectApplication(int clubId, int applicationId);
 }

@@ -1,4 +1,5 @@
 import '../data_source/attendance_data_source.dart';
+import '../models/my_study_info_model.dart';
 import '../models/study_attendance_overview_model.dart';
 import 'attendance_repository.dart';
 
@@ -20,5 +21,10 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   @override
   Future<void> useVacation(int clubId) {
     return _dataSource.useVacation(clubId);
+  }
+
+  @override
+  Future<MyStudyInfoModel> getMyMonthlyInfo(int clubId, DateTime month) {
+    return _dataSource.getMyMonthlyInfo(clubId, month);
   }
 }

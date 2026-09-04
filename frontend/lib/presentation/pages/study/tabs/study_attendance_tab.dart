@@ -18,11 +18,9 @@ import '../widgets/study_summary_card.dart';
 ///   자체 스타일은 club_detail_page.dart의 "지원 하기" 버튼(AppRoundedButton)
 ///   과 동일하다(요청사항).
 ///
-/// 데이터는 studyAttendanceOverviewProvider(clubId)를 통해 지금은 전부
-/// Mock(MockAttendanceDataSource)에서 온다 — 백엔드에 아직 출석/인원 API
-/// 계약이 없다(features/attendance/data_source/attendance_data_source.dart
-/// 주석 참고). 계약이 생기면 데이터소스만 교체하면 되고 이 화면은 그대로
-/// 재사용된다.
+/// 데이터는 studyAttendanceOverviewProvider(clubId)를 통해 실제 서버
+/// (AttendanceApiDataSourceImpl, openapi.yaml의
+/// /clubs/{clubId}/attendance/overview 계약)에서 온다.
 class StudyAttendanceTab extends ConsumerWidget {
   const StudyAttendanceTab({super.key, required this.clubId});
 
