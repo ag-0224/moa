@@ -20,12 +20,10 @@ import java.time.LocalDate;
  * schema.sql의 attendance_codes 테이블과 매핑되는 Entity. 스터디 하루치
  * 출석번호(4자리) 한 건.
  *
- * clubs.leader_id가 생겨서 서버가 동아리장을 구분할 수는 있게 됐지만, 이
- * 코드를 발급/재발급하는 서비스 로직은 아직 별도 이슈로 남아있다 — 로컬
- * 개발에서는 data.sql 시드 데이터로만 채워진다(schema.sql 테이블 주석 참고).
- * 그래서 이 클래스에는 지금 당장 애플리케이션 코드가 쓰는 팩토리 메서드가
- * 없고, AttendanceCodeRepository로 조회만 한다 — 발급 API를 만들 때 함께
- * 팩토리 메서드를 추가하면 된다.
+ * clubs.leader_id 기준으로 동아리장만 호출할 수 있는
+ * GET /clubs/{clubId}/attendance/code(AttendanceService.getOrIssueTodayCode)가
+ * 이 코드를 발급/조회한다. 같은 (club_id, attendance_date)에 대해 이미
+ * 발급된 코드가 있으면 그대로 재사용하고, 없으면 issue()로 새로 만든다.
  */
 @Entity
 @Table(name = "attendance_codes", uniqueConstraints = {
@@ -48,4 +46,16 @@ public class AttendanceCode extends BaseEntity {
 
     @Column(name = "attendance_date", nullable = false)
     private LocalDate attendanceDate;
+
+    /**
+     * 출석번호 발급(GET /clubs/{clubId}/attendance/code)에서 그날 코드가
+     * 아직 없을 때 새로 만드는 팩토리.
+     */
+    public static AttendanceCode issue(Club club, String code, LocalDate attendanceDate) {
+        AttendanceCode attendanceCode = new AttendanceCode();
+        attendanceCode.club = club;
+        attendanceCode.code = code;
+        attendanceCode.attendanceDate = attendanceDate;
+        return attendanceCode;
+    }
 }

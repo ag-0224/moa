@@ -35,4 +35,11 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
      * 비교해야 하기 때문이다.
      */
     long countByClubIdAndUserIdAndStatus(Long clubId, Long userId, AttendanceStatus status);
+
+    /**
+     * 스터디 삭제(ClubService.deleteClub) 시 attendance_records에 남아있는
+     * 출석 기록을 먼저 정리하기 위해 쓴다. FK 제약상 clubs 행보다 먼저
+     * 지워야 한다(자식 테이블 중 가장 먼저 지우는 대상).
+     */
+    void deleteByClubId(Long clubId);
 }

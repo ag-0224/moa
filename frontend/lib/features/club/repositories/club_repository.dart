@@ -22,6 +22,15 @@ abstract interface class ClubRepository {
     File? thumbnail,
   });
 
+  Future<ClubDetailModel> updateClub({
+    required int clubId,
+    required String name,
+    required String description,
+    File? thumbnail,
+  });
+
+  Future<void> deleteClub(int clubId);
+
   Future<List<ClubMemberModel>> getClubMembers(int clubId);
 
   Future<ClubDetailModel> transferLeadership(int clubId, int newLeaderId);

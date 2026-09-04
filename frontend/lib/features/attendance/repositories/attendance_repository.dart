@@ -1,3 +1,4 @@
+import '../models/attendance_code_model.dart';
 import '../models/my_study_info_model.dart';
 import '../models/study_attendance_overview_model.dart';
 
@@ -9,4 +10,6 @@ abstract class AttendanceRepository {
   Future<void> useVacation(int clubId);
 
   Future<MyStudyInfoModel> getMyMonthlyInfo(int clubId, DateTime month);
+
+  Future<AttendanceCodeModel> getTodayCode(int clubId);
 }

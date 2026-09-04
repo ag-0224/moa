@@ -2,6 +2,7 @@ package com.moa.controller;
 
 import com.moa.dto.request.CheckInRequest;
 import com.moa.dto.response.ApiResponse;
+import com.moa.dto.response.AttendanceCodeResponse;
 import com.moa.dto.response.AttendanceOverviewResponse;
 import com.moa.dto.response.MyStudyInfoResponse;
 import com.moa.service.AttendanceService;
@@ -35,6 +36,15 @@ public class AttendanceController {
     public ApiResponse<AttendanceOverviewResponse> getOverview(Authentication authentication, @PathVariable Long clubId) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(attendanceService.getOverview(clubId, userId));
+    }
+
+    /**
+     * 스터디 관리 페이지의 "출석번호 확인". 동아리장만 호출할 수 있다.
+     */
+    @GetMapping("/code")
+    public ApiResponse<AttendanceCodeResponse> getTodayCode(Authentication authentication, @PathVariable Long clubId) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(attendanceService.getOrIssueTodayCode(clubId, userId));
     }
 
     /**

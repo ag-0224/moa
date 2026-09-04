@@ -98,6 +98,19 @@ public class Club extends BaseEntity {
     }
 
     /**
+     * 스터디 정보 수정(PATCH /clubs/{clubId}) 화면에서 호출된다. thumbnailUrl이
+     * null이면(새 사진을 보내지 않았으면) 기존 사진을 그대로 유지한다 — 즉
+     * name/description은 항상 갱신하고, thumbnailUrl만 선택적으로 갱신한다.
+     */
+    public void updateInfo(String name, String description, String thumbnailUrl) {
+        this.name = name;
+        this.description = description;
+        if (thumbnailUrl != null) {
+            this.thumbnailUrl = thumbnailUrl;
+        }
+    }
+
+    /**
      * 로그인한 사용자가 이 동아리의 관리자(동아리장)인지. ClubResponse/
      * ClubDetailResponse의 leader 필드와 각종 관리자 전용 API의 인가 검사
      * (ClubService.requireLeader)가 이 메서드로 판단한다.

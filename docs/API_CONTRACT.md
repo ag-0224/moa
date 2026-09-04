@@ -192,6 +192,29 @@ INSERT 스니펫을 본인의 `user_id`에 맞게 고쳐서 H2 콘솔(`/h2-conso
     이 로컬 디스크 방식은 S3 등으로 옮겨야 한다.
 
 
+
+### 스터디 정보 수정 / 삭제 (관리자 전용)
+
+스터디 관리 페이지(`StudyManagementPage`)의 "스터디 정보 수정"/"스터디 삭제"
+메뉴가 쓰는 API다. 둘 다 동아리장만 호출할 수 있고, 아니면
+`403 NOT_CLUB_LEADER`를 반환한다.
+
+- `PATCH /clubs/{clubId}` (multipart/form-data) — 필드: `name`(필수, 100자
+  이하), `description`(필수), `thumbnail`(선택, 이미지 파일). `POST /clubs`
+  (스터디 등록)와 같은 이유로 multipart를 쓴다. `thumbnail`을 보내지 않으면
+  기존 사진을 그대로 유지한다(디스크에서 기존 파일을 지우지 않는다 — 등록
+  때와 동일하게 `FileStorageService.storeClubThumbnail`로 새 파일만 추가
+  저장한다).
+  - `name`이 비어있거나 100자를 넘으면 `400 INVALID_CLUB_NAME`.
+  - 자기 자신을 제외하고 이미 존재하는 이름이면 `409 DUPLICATE_CLUB_NAME`
+    (자기 이름 그대로 재제출하는 것은 허용된다).
+  - 성공하면 수정된 `ClubDetail`을 응답한다.
+- `DELETE /clubs/{clubId}` — 스터디 삭제. soft delete 없이 완전히 삭제하며,
+  FK 제약을 지키기 위해 자식 테이블부터 순서대로 지운다: 출석 기록
+  (`attendance_records`) → 출석번호(`attendance_codes`) → 가입 신청
+  (`club_applications`) → 멤버(`club_members`) → 마지막으로 `clubs` 행 자체
+  (`UserService.deleteAccount`의 회원 탈퇴 삭제 순서와 같은 방식).
+  성공 응답은 `data: null`이다.
 ## 5. 스터디 출석 (Attendance)
 
 스터디 홈 화면(`StudyHomePage`)의 출석현황/내 정보 탭이 쓰는 API다. 네
@@ -204,6 +227,10 @@ INSERT 스니펫을 본인의 `user_id`에 맞게 고쳐서 H2 콘솔(`/h2-conso
   사용자 본인의 이번 학기 누적 휴가 사용/총 일수(`myVacationDaysUsed`/
   `myVacationDaysTotal`)를 함께 내려준다. `members` 배열은 로그인한 사용자
   본인(`isMe: true`)이 항상 첫 번째다.
+- `GET /clubs/{clubId}/attendance/code` — 스터디 관리 페이지의 "출석번호
+  확인". 동아리장 전용이며, 동아리장이 아니면 `403 NOT_CLUB_LEADER`. 오늘
+  날짜로 이미 발급된 번호가 있으면 그대로, 없으면 새로 발급해서 내려준다
+  (멱등: 하루에 여러 번 호출해도 같은 번호가 온다).
 - `POST /clubs/{clubId}/attendance/check-in { "code": "1234" }` — "출석
   하기" 버튼의 출석번호 입력 제출. 오늘 발급된 번호와 일치하면 오늘을
   `PRESENT`로 기록한다.
@@ -243,18 +270,16 @@ INSERT 스니펫을 본인의 `user_id`에 맞게 고쳐서 H2 콘솔(`/h2-conso
 달보다 이전 달을 조회하면 `dailyMarks`가 빈 맵으로, 생성일이 속한 달을
 조회하면 생성일 이전 날짜만 맵에서 빠진 채로 내려온다.
 
-### 출석번호 발급은 이번 범위 밖
+### 출석번호 발급 (관리자 전용)
 
-`clubs.leader_id`가 생겨서(위 "관리자(동아리장) 권한" 참고) 서버가 "누가 이
-스터디의 동아리장인지"는 이제 정확히 판단할 수 있다. 다만 동아리장이 매일
-출석번호를 새로 발급/조회하는 API(관리 페이지의 "출석번호 확인")는 그 판단
-로직이 생긴 것과 별개로 아직 만들지 않았다 — 이번 변경 범위는 관리자 권한
-인프라(생성 시 자동 지정 + 넘겨주기)와 가입 신청 승인/거절까지다. 로컬(H2)
-개발 환경에서는 `data.sql`이 서버 기동 시마다 스터디 1번(알고리즘 스터디)의
-오늘자 코드를 `'1234'`로 고정 시딩해서 개발/테스트를 가능하게 한다.
-`leader_id` 기준 인가로 실제 발급/재발급 API와 관리 페이지를 붙이는 건
-다음 이슈로 남겨둔다.
-
+`clubs.leader_id`를 기준으로 동아리장만 호출할 수 있는
+`GET /clubs/{clubId}/attendance/code`가 매일의 출석번호를 발급/조회한다.
+같은 날짜(`club_id`, `attendance_date`)에 대해 이미 발급된 코드가 있으면
+그대로 재사용하고(같은 날 여러 번 눌러도 번호가 바뀌지 않는다), 없으면
+4자리 숫자를 무작위로 새로 생성해 저장한다. 재발급(강제로 새 번호로 바꾸는
+기능)은 아직 없다 — 필요해지면 별도 엔드포인트로 추가한다. 로컬(H2) 개발
+환경에서는 `data.sql`이 서버 기동 시마다 스터디 1번(알고리즘 스터디)의
+오늘자 코드를 `'1234'`로 고정 시딩한다.
 ### 이번 학기 휴가 총 일수 (vacationDaysTotal)
 
 `club_members` 테이블에 `vacation_days_total` 컬럼(기본값 3)으로 저장된다.

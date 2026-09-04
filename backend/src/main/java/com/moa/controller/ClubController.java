@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,6 +74,33 @@ public class ClubController {
     public ApiResponse<ClubDetailResponse> getClubDetail(Authentication authentication, @PathVariable Long clubId) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(clubService.getClubDetail(userId, clubId));
+    }
+
+    /**
+     * 스터디 관리 페이지의 "스터디 정보 수정". 동아리장만 호출할 수 있다.
+     * createClub과 같은 이유로 multipart/form-data이며, thumbnail 파트를
+     * 보내지 않으면 기존 사진을 그대로 유지한다.
+     */
+    @PatchMapping(value = "/{clubId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ClubDetailResponse> updateClub(
+            Authentication authentication,
+            @PathVariable Long clubId,
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.updateClub(userId, clubId, name, description, thumbnail));
+    }
+
+    /**
+     * 스터디 관리 페이지의 "스터디 삭제". 동아리장만 호출할 수 있다.
+     */
+    @DeleteMapping("/{clubId}")
+    public ApiResponse<Void> deleteClub(Authentication authentication, @PathVariable Long clubId) {
+        Long userId = (Long) authentication.getPrincipal();
+        clubService.deleteClub(userId, clubId);
+        return ApiResponse.success(null);
     }
 
     /**

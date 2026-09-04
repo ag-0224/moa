@@ -2,6 +2,7 @@ package com.moa.service;
 
 import com.moa.constant.AttendanceMark;
 import com.moa.constant.AttendanceStatus;
+import com.moa.dto.response.AttendanceCodeResponse;
 import com.moa.dto.response.AttendanceOverviewResponse;
 import com.moa.dto.response.MemberAttendanceResponse;
 import com.moa.dto.response.MyStudyInfoResponse;
@@ -15,6 +16,7 @@ import com.moa.filter.exception.ClubMembershipNotFoundException;
 import com.moa.filter.exception.ClubNotFoundException;
 import com.moa.filter.exception.InvalidAttendanceCodeException;
 import com.moa.filter.exception.InvalidAuthTokenException;
+import com.moa.filter.exception.NotClubLeaderException;
 import com.moa.filter.exception.VacationLimitExceededException;
 import com.moa.repository.AttendanceCodeRepository;
 import com.moa.repository.AttendanceRecordRepository;
@@ -25,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -58,6 +61,8 @@ public class AttendanceService {
     private final UserRepository userRepository;
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final AttendanceCodeRepository attendanceCodeRepository;
+
+    private final SecureRandom secureRandom = new SecureRandom();
 
     /**
      * 출석 현황 탭. 이번 주(월~일) 전체 인원의 출석 도장과, 로그인한 사용자
@@ -207,6 +212,30 @@ public class AttendanceService {
                         record -> record.changeStatus(status),
                         () -> attendanceRecordRepository.save(AttendanceRecord.of(club, user, date, status))
                 );
+    }
+
+    /**
+     * 스터디 관리 페이지의 "출석번호 확인". 동아리장만 호출할 수 있다(아니면
+     * NotClubLeaderException). 오늘 날짜로 이미 발급된 코드가 있으면 그대로
+     * 재사용하고, 없으면 4자리 숫자를 새로 발급해서 저장한다 — 같은 날 여러
+     * 번 호출해도 매번 같은 번호가 내려온다(멱등).
+     */
+    @Transactional
+    public AttendanceCodeResponse getOrIssueTodayCode(Long clubId, Long userId) {
+        Club club = findClubOrThrow(clubId);
+        if (!club.isLedBy(userId)) {
+            throw new NotClubLeaderException("동아리장만 할 수 있어요.");
+        }
+
+        LocalDate today = LocalDate.now();
+        AttendanceCode todayCode = attendanceCodeRepository.findByClubIdAndAttendanceDate(clubId, today)
+                .orElseGet(() -> attendanceCodeRepository.save(AttendanceCode.issue(club, generateCode(), today)));
+
+        return AttendanceCodeResponse.of(todayCode);
+    }
+
+    private String generateCode() {
+        return String.format("%04d", secureRandom.nextInt(10000));
     }
 
     /**
