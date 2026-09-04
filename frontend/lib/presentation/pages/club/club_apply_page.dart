@@ -34,6 +34,17 @@ class _ClubApplyPageState extends ConsumerState<ClubApplyPage> {
   }
 
   Future<void> _submit() async {
+    // AppRoundedButton은 isLoading일 때 onPressed를 비활성화하지만, 그건
+    // "다음 프레임"부터 반영된다 — setState(_isSubmitting = true)는 필드값을
+    // 즉시 바꿔도 실제 리빌드는 다음 프레임에야 일어나므로, 아주 빠르게 두 번
+    // 탭하면(같은 프레임 안에서) onPressed가 아직 비활성화되기 전이라 _submit이
+    // 중복 호출될 수 있다. 그 경쟁 상태에서 먼저 끝난 호출이 navigator.pop으로
+    // 이 화면을 이미 벗어난 뒤, 나중에 끝난 두 번째 호출이 그 시점에 deactivate된
+    // (그러나 아직 mounted는 true인) 이 위젯의 ref/context를 건드리면서
+    // "Looking up a deactivated widget's ancestor is unsafe" 에러가 날 수 있다 —
+    // 그래서 진입 시점에 이미 제출 중이면 곧바로 걸러낸다.
+    if (_isSubmitting) return;
+
     final text = _controller.text.trim();
     if (text.length < _minLength) {
       setState(() => _errorText = '자기소개를 $_minLength자 이상 입력해주세요. (현재 ${text.length}자)');
@@ -49,17 +60,28 @@ class _ClubApplyPageState extends ConsumerState<ClubApplyPage> {
     // 그 사이에 사용자가 뒤로가기 등으로 화면을 벗어나 위젯이 deactivate된 경우
     // "Looking up a deactivated widget's ancestor is unsafe" 에러가 난다.
     // mounted 체크만으로는 막을 수 없으므로(디액티베이트된 상태에서도 mounted는
-    // true다), await 전에 미리 참조를 캡처해두고 그 참조만 사용한다.
+    // true다), await 전에 미리 참조를 캡처해두고 그 참조만 사용한다. 그 참조
+    // 자신(ScaffoldMessengerState/NavigatorState)도 각자 State라 .mounted를
+    // 따로 갖고 있어서, 실제로 쓰기 전에 한 번 더 확인한다.
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     try {
       await ref.read(applyToClubUseCaseProvider)(widget.clubId, text);
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('지원서를 제출했어요. 승인을 기다려주세요.')));
-      navigator.pop(true);
-    } catch (e) {
+      if (messenger.mounted) {
+        messenger.showSnackBar(const SnackBar(content: Text('지원서를 제출했어요. 승인을 기다려주세요.')));
+      }
+      if (navigator.mounted) {
+        navigator.pop(true);
+      }
+    } catch (e, stackTrace) {
       if (!mounted) return;
+      // 이 화면(또는 비슷한 async-gap 버그)이 나중에 또 재발하면, 여기 콘솔
+      // 로그의 stackTrace가 정확히 어느 줄에서 터졌는지 알려준다 — 사용자에게
+      // 보여주는 $e 문자열만으로는(예: 프레임워크 에러 메시지) 원인 위치를
+      // 알 수 없다.
+      debugPrint('ClubApplyPage._submit 실패: $e\n$stackTrace');
       setState(() {
         _isSubmitting = false;
         _errorText = '지원서 제출에 실패했어요: $e';
