@@ -45,6 +45,15 @@ public class ClubMember extends BaseEntity {
     @Column(name = "is_favorite", nullable = false)
     private boolean favorite;
 
+    /**
+     * 이번 학기 휴가 총 일수. schema.sql의 DB 기본값(3)과 반드시 같은 값으로
+     * 맞춰둔다 — Hibernate가 INSERT 시 이 필드의 자바 기본값(초기화하지
+     * 않으면 0)을 그대로 내려보내 DB DEFAULT를 덮어써 버리기 때문이다
+     * (User.role = Role.USER 필드 초기화와 같은 이유).
+     */
+    @Column(name = "vacation_days_total", nullable = false)
+    private int vacationDaysTotal = 3;
+
     public static ClubMember join(Club club, User user) {
         return join(club, user, false);
     }

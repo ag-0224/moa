@@ -4,13 +4,16 @@ import 'package:dio/dio.dart';
 
 import '../../../app/network/api_client.dart';
 import '../../../core/network/api_envelope.dart';
+import '../models/club_application_model.dart';
 import '../models/club_detail_model.dart';
+import '../models/club_member_model.dart';
 import '../models/club_model.dart';
 import 'club_data_source.dart';
 
 /// openapi.yaml의 GET /clubs/me, GET /clubs, POST /clubs, PATCH
-/// /clubs/{clubId}/favorite, GET /clubs/{clubId}, POST /clubs/{clubId}/apply
-/// 계약과 매핑되는 실제 구현체.
+/// /clubs/{clubId}/favorite, GET /clubs/{clubId}, POST /clubs/{clubId}/apply,
+/// GET /clubs/{clubId}/members, PATCH /clubs/{clubId}/leader, GET/POST
+/// /clubs/{clubId}/applications... 계약과 매핑되는 실제 구현체.
 final class ClubApiDataSourceImpl implements ClubDataSource {
   ClubApiDataSourceImpl(this._apiClient);
 
@@ -87,6 +90,63 @@ final class ClubApiDataSourceImpl implements ClubDataSource {
       });
       final response = await _apiClient.dio.post<Map<String, dynamic>>('/clubs', data: formData);
       return ApiEnvelope.unwrap(response.data, ClubDetailModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<List<ClubMemberModel>> getClubMembers(int clubId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>('/clubs/$clubId/members');
+      return ApiEnvelope.unwrapList(response.data, ClubMemberModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<ClubDetailModel> transferLeadership(int clubId, int newLeaderId) async {
+    try {
+      final response = await _apiClient.dio.patch<Map<String, dynamic>>(
+        '/clubs/$clubId/leader',
+        data: {'newLeaderId': newLeaderId},
+      );
+      return ApiEnvelope.unwrap(response.data, ClubDetailModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<List<ClubApplicationModel>> getPendingApplications(int clubId) async {
+    try {
+      final response = await _apiClient.dio.get<Map<String, dynamic>>('/clubs/$clubId/applications');
+      return ApiEnvelope.unwrapList(response.data, ClubApplicationModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<ClubApplicationModel> approveApplication(int clubId, int applicationId) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/clubs/$clubId/applications/$applicationId/approve',
+      );
+      return ApiEnvelope.unwrap(response.data, ClubApplicationModel.fromJson);
+    } on DioException catch (e) {
+      throw ApiEnvelope.mapError(e);
+    }
+  }
+
+  @override
+  Future<ClubApplicationModel> rejectApplication(int clubId, int applicationId) async {
+    try {
+      final response = await _apiClient.dio.post<Map<String, dynamic>>(
+        '/clubs/$clubId/applications/$applicationId/reject',
+      );
+      return ApiEnvelope.unwrap(response.data, ClubApplicationModel.fromJson);
     } on DioException catch (e) {
       throw ApiEnvelope.mapError(e);
     }

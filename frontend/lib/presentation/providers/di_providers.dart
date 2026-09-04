@@ -8,18 +8,35 @@ import '../../features/auth/repositories/auth_repository.dart';
 import '../../features/auth/repositories/auth_repository_impl.dart';
 import '../../features/auth/usecases/sign_in_use_case.dart';
 import '../../features/auth/usecases/sign_out_use_case.dart';
+import '../../features/attendance/data_source/attendance_data_source.dart';
+import '../../features/attendance/data_source/attendance_api_data_source.dart';
+import '../../features/attendance/models/study_attendance_overview_model.dart';
+import '../../features/attendance/repositories/attendance_repository.dart';
+import '../../features/attendance/repositories/attendance_repository_impl.dart';
+import '../../features/attendance/usecases/get_study_attendance_overview_use_case.dart';
+import '../../features/attendance/usecases/check_in_use_case.dart';
+import '../../features/attendance/usecases/use_vacation_use_case.dart';
+import '../../features/attendance/usecases/get_my_study_info_use_case.dart';
+import '../../features/attendance/models/my_study_info_model.dart';
 import '../../features/club/data_source/club_api_data_source.dart';
 import '../../features/club/data_source/club_data_source.dart';
+import '../../features/club/models/club_application_model.dart';
 import '../../features/club/models/club_detail_model.dart';
+import '../../features/club/models/club_member_model.dart';
 import '../../features/club/models/club_model.dart';
 import '../../features/club/repositories/club_repository.dart';
 import '../../features/club/repositories/club_repository_impl.dart';
 import '../../features/club/usecases/apply_to_club_use_case.dart';
+import '../../features/club/usecases/approve_club_application_use_case.dart';
 import '../../features/club/usecases/create_club_use_case.dart';
 import '../../features/club/usecases/get_all_clubs_use_case.dart';
 import '../../features/club/usecases/get_club_detail_use_case.dart';
+import '../../features/club/usecases/get_club_members_use_case.dart';
 import '../../features/club/usecases/get_my_clubs_use_case.dart';
+import '../../features/club/usecases/get_pending_club_applications_use_case.dart';
+import '../../features/club/usecases/reject_club_application_use_case.dart';
 import '../../features/club/usecases/set_club_favorite_use_case.dart';
+import '../../features/club/usecases/transfer_club_leadership_use_case.dart';
 import '../../features/health/data_source/health_api_data_source.dart';
 import '../../features/health/repositories/health_repository.dart';
 import '../../features/health/repositories/health_repository_impl.dart';
@@ -127,4 +144,74 @@ final allClubsProvider = FutureProvider<List<ClubModel>>((ref) {
 /// 불러와서 applicationStatus 변경을 반영한다.
 final clubDetailProvider = FutureProvider.family<ClubDetailModel, int>((ref, clubId) {
   return ref.watch(getClubDetailUseCaseProvider)(clubId);
+});
+
+/// 관리자 권한 넘기기 화면(TransferLeadershipPage)이 쓰는 유스케이스.
+final getClubMembersUseCaseProvider =
+    Provider((ref) => GetClubMembersUseCase(ref.watch(clubRepositoryProvider)));
+
+final transferClubLeadershipUseCaseProvider =
+    Provider((ref) => TransferClubLeadershipUseCase(ref.watch(clubRepositoryProvider)));
+
+/// 가입 신청 관리 화면(ClubApplicationsPage)이 쓰는 유스케이스들.
+final getPendingClubApplicationsUseCaseProvider =
+    Provider((ref) => GetPendingClubApplicationsUseCase(ref.watch(clubRepositoryProvider)));
+
+final approveClubApplicationUseCaseProvider =
+    Provider((ref) => ApproveClubApplicationUseCase(ref.watch(clubRepositoryProvider)));
+
+final rejectClubApplicationUseCaseProvider =
+    Provider((ref) => RejectClubApplicationUseCase(ref.watch(clubRepositoryProvider)));
+
+/// 관리자 권한 넘기기 화면이 watch하는 clubId별 멤버 목록.
+final clubMembersProvider = FutureProvider.family<List<ClubMemberModel>, int>((ref, clubId) {
+  return ref.watch(getClubMembersUseCaseProvider)(clubId);
+});
+
+/// 가입 신청 관리 화면이 watch하는 clubId별 대기 중인 신청서 목록. 승인/거절
+/// 후에는 ref.invalidate(pendingClubApplicationsProvider(clubId))로 다시
+/// 불러온다.
+final pendingClubApplicationsProvider = FutureProvider.family<List<ClubApplicationModel>, int>((ref, clubId) {
+  return ref.watch(getPendingClubApplicationsUseCaseProvider)(clubId);
+});
+
+/// 스터디(동아리) 출석 현황 탭 전용 DI. openapi.yaml의 /clubs/{clubId}/attendance/*
+/// 계약과 매핑되는 AttendanceApiDataSourceImpl을 쓴다(club feature의
+/// ClubDataSource/ClubApiDataSourceImpl과 같은 패턴).
+final attendanceDataSourceProvider = Provider<AttendanceDataSource>((ref) {
+  return AttendanceApiDataSourceImpl(ref.watch(apiClientProvider));
+});
+
+final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
+  return AttendanceRepositoryImpl(ref.watch(attendanceDataSourceProvider));
+});
+
+final getStudyAttendanceOverviewUseCaseProvider = Provider(
+  (ref) => GetStudyAttendanceOverviewUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
+final checkInUseCaseProvider = Provider(
+  (ref) => CheckInUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
+final useVacationUseCaseProvider = Provider(
+  (ref) => UseVacationUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
+final getMyStudyInfoUseCaseProvider = Provider(
+  (ref) => GetMyStudyInfoUseCase(ref.watch(attendanceRepositoryProvider)),
+);
+
+/// 스터디 홈 화면의 "내 정보" 탭이 watch하는 (clubId, 조회할 달)별 월간
+/// 출석/휴가 정보. 화살표나 달력으로 다른 달/연도를 선택하면 month가
+/// 바뀌면서 새로운 FutureProvider 인스턴스로 자동 캐시된다.
+final myStudyInfoProvider =
+    FutureProvider.family<MyStudyInfoModel, ({int clubId, DateTime month})>((ref, params) {
+  return ref.watch(getMyStudyInfoUseCaseProvider)(params.clubId, params.month);
+});
+
+/// 스터디 홈 화면의 출석 현황 탭이 watch하는 clubId별 출석 개요.
+final studyAttendanceOverviewProvider =
+    FutureProvider.family<StudyAttendanceOverviewModel, int>((ref, clubId) {
+  return ref.watch(getStudyAttendanceOverviewUseCaseProvider)(clubId);
 });

@@ -22,6 +22,7 @@ public record ClubDetailResponse(
         String thumbnailUrl,
         boolean joined,
         boolean favorite,
+        boolean leader,
         ClubApplicationStatus applicationStatus
 ) {
 
@@ -29,6 +30,7 @@ public record ClubDetailResponse(
             Club club,
             boolean joined,
             boolean favorite,
+            boolean leader,
             ClubApplicationStatus applicationStatus
     ) {
         return new ClubDetailResponse(
@@ -41,6 +43,7 @@ public record ClubDetailResponse(
                 club.getThumbnailUrl(),
                 joined,
                 favorite,
+                leader,
                 joined ? null : applicationStatus
         );
     }
