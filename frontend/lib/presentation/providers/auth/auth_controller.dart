@@ -44,13 +44,22 @@ class AuthController extends StateNotifier<AuthState> {
   void _resetHomeTab() {
     _ref.read(mainTabProvider.notifier).state = MainTab.home;
     _ref.read(isClubSearchingProvider.notifier).state = false;
+    _invalidateUserData();
+  }
+
+  void _invalidateUserData() {
+    _ref.invalidate(myClubsProvider);
+    _ref.invalidate(allClubsProvider);
   }
 
   Future<void> _restoreSession() async {
     final result = await _getMyInfoUseCase();
     result.when(
       success: (user) => state = _stateFor(user),
-      failure: (_) => state = const AuthUnauthenticated(),
+      failure: (_) {
+        _invalidateUserData();
+        state = const AuthUnauthenticated();
+      },
     );
   }
 

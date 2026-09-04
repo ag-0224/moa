@@ -6,9 +6,10 @@ import com.moa.entity.Club;
  * openapi.yaml의 Club 스키마(GET /clubs, GET /clubs/me, PATCH /clubs/{clubId}/favorite)와
  * 매핑되는 응답 DTO.
  *
- * joined/favorite는 Club 자체가 아니라 "요청한 사용자 기준"으로 계산되는 값이라
- * Club 엔티티가 아니라 ClubService가 채워서 넘긴다(User.profileCompleted처럼
- * 엔티티 안에서 계산할 수 있는 값이 아님에 주의).
+ * joined/favorite/leader는 Club 자체가 아니라 "요청한 사용자 기준"으로 계산되는
+ * 값이라 Club 엔티티가 아니라 ClubService가 채워서 넘긴다(User.profileCompleted처럼
+ * 엔티티 안에서 계산할 수 있는 값이 아님에 주의). leader는 Club.isLedBy(userId)로
+ * 계산한다.
  *
  * 필드 이름을 isJoined/isFavorite가 아니라 joined/favorite로 지은 이유는
  * UserResponse.profileCompleted와 같은 규칙("is" 접두사 없이 그냥 형용사)을
@@ -24,10 +25,11 @@ public record ClubResponse(
         int memberCount,
         String thumbnailUrl,
         boolean joined,
-        boolean favorite
+        boolean favorite,
+        boolean leader
 ) {
 
-    public static ClubResponse of(Club club, boolean joined, boolean favorite) {
+    public static ClubResponse of(Club club, boolean joined, boolean favorite, boolean leader) {
         return new ClubResponse(
                 club.getId(),
                 club.getName(),
@@ -36,7 +38,8 @@ public record ClubResponse(
                 club.getMemberCount(),
                 club.getThumbnailUrl(),
                 joined,
-                favorite
+                favorite,
+                leader
         );
     }
 }

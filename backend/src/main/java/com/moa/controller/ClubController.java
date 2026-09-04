@@ -2,8 +2,11 @@ package com.moa.controller;
 
 import com.moa.dto.request.ApplyClubRequest;
 import com.moa.dto.request.SetClubFavoriteRequest;
+import com.moa.dto.request.TransferClubLeaderRequest;
 import com.moa.dto.response.ApiResponse;
+import com.moa.dto.response.ClubApplicationResponse;
 import com.moa.dto.response.ClubDetailResponse;
+import com.moa.dto.response.ClubMemberSummaryResponse;
 import com.moa.dto.response.ClubResponse;
 import com.moa.service.ClubService;
 import jakarta.validation.Valid;
@@ -23,8 +26,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * openapi.yaml의 GET /clubs/me, GET /clubs, PATCH /clubs/{clubId}/favorite 계약을 구현한다.
- * 전부 Authorization: Bearer <accessToken>이 필요하다.
+ * openapi.yaml의 GET /clubs/me, GET /clubs, PATCH /clubs/{clubId}/favorite,
+ * PATCH /clubs/{clubId}/leader, GET /clubs/{clubId}/members, GET/POST
+ * /clubs/{clubId}/applications... 계약을 구현한다. 전부
+ * Authorization: Bearer <accessToken>이 필요하다.
  */
 @RestController
 @RequestMapping("/api/v1/clubs")
@@ -97,5 +102,68 @@ public class ClubController {
     ) {
         Long userId = (Long) authentication.getPrincipal();
         return ApiResponse.success(clubService.createClub(userId, name, description, thumbnail));
+    }
+
+    /**
+     * 관리자 권한 넘기기 화면(멤버 선택)이 쓰는 동아리 멤버 목록.
+     */
+    @GetMapping("/{clubId}/members")
+    public ApiResponse<List<ClubMemberSummaryResponse>> getClubMembers(
+            Authentication authentication,
+            @PathVariable Long clubId
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.getClubMembers(userId, clubId));
+    }
+
+    /**
+     * 관리자(동아리장) 권한 넘기기. 현재 동아리장만 호출할 수 있다.
+     */
+    @PatchMapping("/{clubId}/leader")
+    public ApiResponse<ClubDetailResponse> transferClubLeader(
+            Authentication authentication,
+            @PathVariable Long clubId,
+            @Valid @RequestBody TransferClubLeaderRequest request
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.transferLeadership(userId, clubId, request.newLeaderId()));
+    }
+
+    /**
+     * 가입 신청 관리 화면의 대기 중인 신청서 목록(관리자 전용).
+     */
+    @GetMapping("/{clubId}/applications")
+    public ApiResponse<List<ClubApplicationResponse>> getPendingClubApplications(
+            Authentication authentication,
+            @PathVariable Long clubId
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.getPendingApplications(userId, clubId));
+    }
+
+    /**
+     * 가입 신청 승인(관리자 전용).
+     */
+    @PostMapping("/{clubId}/applications/{applicationId}/approve")
+    public ApiResponse<ClubApplicationResponse> approveClubApplication(
+            Authentication authentication,
+            @PathVariable Long clubId,
+            @PathVariable Long applicationId
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.approveApplication(userId, clubId, applicationId));
+    }
+
+    /**
+     * 가입 신청 거절(관리자 전용).
+     */
+    @PostMapping("/{clubId}/applications/{applicationId}/reject")
+    public ApiResponse<ClubApplicationResponse> rejectClubApplication(
+            Authentication authentication,
+            @PathVariable Long clubId,
+            @PathVariable Long applicationId
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ApiResponse.success(clubService.rejectApplication(userId, clubId, applicationId));
     }
 }

@@ -110,12 +110,57 @@ components:
         favorite:
           type: boolean
           description: 로그인한 사용자가 이 동아리를 즐겨찾기했는지 여부. joined가 false면 항상 false다.
+        leader:
+          type: boolean
+          description: >-
+            로그인한 사용자가 이 동아리의 관리자(동아리장)인지 여부. clubs.leader_id와
+            로그인한 사용자 ID를 비교해서 서버가 판단한다 — leaderName(표시용
+            문자열) 비교가 아니라 실제 FK 기준이라 동명이인이 있어도 정확하다.
+            joined가 false면 항상 false다.
     SetClubFavoriteRequest:
       type: object
       required: [favorite]
       properties:
         favorite:
           type: boolean
+    TransferClubLeaderRequest:
+      type: object
+      required: [newLeaderId]
+      properties:
+        newLeaderId:
+          type: integer
+          format: int64
+          description: 관리자 권한을 넘겨받을 대상의 User ID. 반드시 이 동아리의 기존 가입 멤버여야 한다.
+    ClubMemberSummary:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        leader:
+          type: boolean
+          description: 이 멤버가 현재 동아리장인지 여부.
+    ClubApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        applicantName:
+          type: string
+        selfIntroduction:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+        appliedAt:
+          type: string
+          format: date-time
     ClubDetail:
       allOf:
         - $ref: '#/components/schemas/Club'
@@ -141,6 +186,89 @@ components:
           type: string
           minLength: 20
           maxLength: 1000
+    AttendanceMark:
+      type: string
+      enum: [PRESENT, ABSENT, VACATION, UPCOMING]
+      description: >-
+        하루치 출석 표시 상태. PRESENT/VACATION은 attendance_records에 실제로
+        저장된 값이고, ABSENT(지나간 날짜인데 기록이 없음)와 UPCOMING(오늘 중
+        아직 정하지 않았거나 미래의 날짜)은 서버가 계산해서 채운다.
+    MemberAttendance:
+      type: object
+      properties:
+        memberId:
+          type: integer
+          format: int64
+          description: 그 인원의 User ID.
+        name:
+          type: string
+        isMe:
+          type: boolean
+          description: 로그인한 사용자 본인의 행인지 여부.
+        todayMark:
+          $ref: '#/components/schemas/AttendanceMark'
+        weeklyMarks:
+          type: array
+          description: 이번 주 월~일 7일치 출석 도장.
+          items:
+            $ref: '#/components/schemas/AttendanceMark'
+          minItems: 7
+          maxItems: 7
+        vacationDaysUsed:
+          type: integer
+          description: 이번 학기 누적 휴가 사용 일수.
+    AttendanceOverview:
+      type: object
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: 이번 주 월요일 날짜.
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberAttendance'
+        myVacationDaysUsed:
+          type: integer
+        myVacationDaysTotal:
+          type: integer
+    CheckInRequest:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: '^\d{4}$'
+          description: 오늘의 출석번호 4자리.
+    MyStudyInfo:
+      type: object
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+        dailyMarks:
+          type: object
+          description: >-
+            그 달의 day-of-month(문자열 "1"~"31") -> AttendanceMark. 지나지
+            않은 날(오늘 중 아직 정하지 않은 경우 포함)과 스터디가 아직
+            만들어지기 전 날짜(studyCreatedAt 이전)는 둘 다 이 맵에 없다.
+          additionalProperties:
+            $ref: '#/components/schemas/AttendanceMark'
+        presentCount:
+          type: integer
+        absentCount:
+          type: integer
+        vacationDaysUsed:
+          type: integer
+        vacationDaysTotal:
+          type: integer
+        studyCreatedAt:
+          type: string
+          format: date
+          description: >-
+            이 스터디가 만들어진 날짜. 조회한 달과 무관하게 항상 같은 값을
+            돌려준다 — 프론트엔드가 월 이동 화살표/달력 선택의 하한선으로 쓴다.
 paths:
   /health:
     get:
@@ -620,6 +748,429 @@ paths:
                     nullable: true
                   error:
                     $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/members:
+    get:
+      summary: 동아리 멤버 목록
+      description: >-
+        관리자 권한 넘기기 화면(멤버 선택)에서 쓴다. 가입한 사용자만 조회할 수
+        있다 — 가입하지 않은 동아리를 조회하면 CLUB_MEMBERSHIP_NOT_FOUND(404).
+      operationId: getClubMembers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClubMemberSummary'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND) 또는 가입하지 않음(CLUB_MEMBERSHIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/leader:
+    patch:
+      summary: 관리자(동아리장) 권한 넘기기
+      description: >-
+        현재 동아리장만 호출할 수 있다. 대상(newLeaderId)은 반드시 이 동아리의
+        기존 가입 멤버여야 한다. 성공하면 clubs.leader_id와 leaderName이 모두
+        새 동아리장 기준으로 바뀌고, 응답의 leader는 호출한 사용자(이제는 더
+        이상 동아리장이 아님) 기준으로 false가 된다.
+      operationId: transferClubLeader
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferClubLeaderRequest'
+      responses:
+        '200':
+          description: 변경 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ClubDetail'
+                  error:
+                    nullable: true
+        '400':
+          description: 자기 자신에게 넘기려 함 (INVALID_LEADER_TRANSFER)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 호출한 사용자가 동아리장이 아님 (NOT_CLUB_LEADER)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND) 또는 대상이 이 동아리의 멤버가 아님(CLUB_MEMBERSHIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/applications:
+    get:
+      summary: 가입 신청 목록 (관리자 전용)
+      description: >-
+        현재 동아리장만 호출할 수 있다. 아직 처리하지 않은 PENDING 신청서만
+        내려준다 — APPROVED는 이미 멤버 목록에서 보이고, REJECTED는 더 이상
+        조치할 게 없어서 관리 화면에 남겨둘 필요가 없다.
+      operationId: getPendingClubApplications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClubApplication'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 호출한 사용자가 동아리장이 아님 (NOT_CLUB_LEADER)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/applications/{applicationId}/approve:
+    post:
+      summary: 가입 신청 승인 (관리자 전용)
+      description: >-
+        현재 동아리장만 호출할 수 있다. 승인하면 club_members에 행이 생겨
+        실제로 가입 처리되고(memberCount +1), 신청서 상태가 APPROVED로 바뀐다.
+        이미 APPROVED/REJECTED로 처리된 신청서를 다시 승인하려 하면
+        CLUB_APPLICATION_NOT_PENDING(409)을 반환한다.
+      operationId: approveClubApplication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 승인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ClubApplication'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 호출한 사용자가 동아리장이 아님 (NOT_CLUB_LEADER)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND) 또는 신청서(CLUB_APPLICATION_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 이미 처리된 신청서 (CLUB_APPLICATION_NOT_PENDING)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/applications/{applicationId}/reject:
+    post:
+      summary: 가입 신청 거절 (관리자 전용)
+      description: >-
+        현재 동아리장만 호출할 수 있다. 거절하면 신청서 상태만 REJECTED로
+        바뀌고 club_members에는 아무 변화가 없다(원래 없었으니 그대로).
+        지원자는 이후 동아리 상세 화면에서 REJECTED 상태를 보고 재신청할 수
+        있다(POST /clubs/{clubId}/apply 참고). 이미 처리된 신청서를 다시
+        거절하려 하면 CLUB_APPLICATION_NOT_PENDING(409)을 반환한다.
+      operationId: rejectClubApplication
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 거절 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ClubApplication'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 호출한 사용자가 동아리장이 아님 (NOT_CLUB_LEADER)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND) 또는 신청서(CLUB_APPLICATION_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 이미 처리된 신청서 (CLUB_APPLICATION_NOT_PENDING)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
   /users/me:
     get:
       summary: 내 정보 조회
@@ -752,6 +1303,293 @@ paths:
                     nullable: true
         '401':
           description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/attendance/overview:
+    get:
+      summary: 스터디 출석 현황 탭 조회
+      description: >-
+        이번 주(월~일) 전체 인원의 출석 도장과, 로그인한 사용자 본인의 이번
+        학기 누적 휴가 사용/총 일수를 함께 내려준다. 가입한 스터디에 대해서만
+        조회할 수 있다.
+      operationId: getAttendanceOverview
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AttendanceOverview'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)이거나 가입하지 않은 동아리(CLUB_MEMBERSHIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/attendance/check-in:
+    post:
+      summary: 출석번호로 오늘 출석 처리
+      description: >-
+        "출석 하기" 버튼의 출석번호 입력 제출. 오늘 발급된 번호와 일치하면
+        오늘을 출석(PRESENT)으로 기록한다. 이미 기록이 있으면(예: 휴가로
+        되어 있던 경우) 새로 만들지 않고 그 행을 출석으로 바꾼다.
+      operationId: checkInAttendance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+      responses:
+        '200':
+          description: 출석 처리 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    nullable: true
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: >-
+            존재하지 않는 동아리(CLUB_NOT_FOUND), 가입하지 않은 동아리
+            (CLUB_MEMBERSHIP_NOT_FOUND), 또는 오늘의 출석번호가 아직 발급되지
+            않음(ATTENDANCE_CODE_NOT_ISSUED)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 출석번호가 올바르지 않음(INVALID_ATTENDANCE_CODE)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/attendance/vacation:
+    post:
+      summary: 오늘 휴가 사용
+      description: >-
+        "출석 하기" 버튼의 휴가 사용 제출. 오늘을 휴가(VACATION)로 기록한다
+        (결석으로 집계되지 않음).
+      operationId: useAttendanceVacation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 휴가 처리 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    nullable: true
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)이거나 가입하지 않은 동아리(CLUB_MEMBERSHIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 이번 학기 휴가를 이미 모두 사용함(VACATION_LIMIT_EXCEEDED)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/attendance/me:
+    get:
+      summary: 내 정보 탭의 월별 출석 달력 및 통계 조회
+      description: >-
+        year/month로 지정한 달의 출석 달력과 이번 학기 누적 휴가/출석 통계를
+        내려준다. 미래 달을 조회하면 전부 빈 상태(0)로 내려온다.
+      operationId: getMyStudyInfo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/MyStudyInfo'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)이거나 가입하지 않은 동아리(CLUB_MEMBERSHIP_NOT_FOUND)
           content:
             application/json:
               schema:
