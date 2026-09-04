@@ -12,6 +12,7 @@ import '../study/study_home_page.dart';
 import 'widgets/club_list_item.dart';
 import 'widgets/club_section_header.dart';
 import 'widgets/club_search_bar.dart';
+import 'widgets/study_attendance_summary_card.dart';
 import 'widgets/favorite_action_sheet.dart';
 import 'widgets/home_app_bar.dart';
 import 'widgets/team_register_button.dart';
@@ -37,7 +38,7 @@ class HomePage extends ConsumerWidget {
         index: currentTab.index,
         children: const [
           _HomeFeedTab(),
-          _StatsPlaceholderTab(),
+          _StatsTab(),
           MyPageTab(),
         ],
       ),
@@ -342,15 +343,124 @@ class _ClubListView extends StatelessWidget {
   }
 }
 
-/// 통계 탭은 이번 작업 범위(메인 페이지 Figma 목업)에 화면이 없어 자리만
-/// 잡아두는 placeholder다.
-class _StatsPlaceholderTab extends StatelessWidget {
-  const _StatsPlaceholderTab();
+/// 통계 탭: 가입한 모든 스터디의 이번 주(월~일) 출석 현황을 한 번에
+/// 보여준다. 메인 페이지 Figma 목업에는 이 탭 화면이 없어(_StatsPlaceholderTab
+/// 자리표시자였던 이유) 아래 레이아웃은 Figma 대신 스터디 홈 화면의
+/// 출석현황 탭(study/tabs/study_attendance_tab.dart) 스타일을 그대로
+/// 따랐다.
+///
+/// 스터디 하나하나의 멤버 전체 출석/휴가 상세는 이미 StudyHomePage의
+/// 출석현황 탭에 있으니, 여긴 "내가 가입한 스터디 전체"를 한눈에 훑어보는
+/// 요약 화면이다 — 카드 하나당 스터디 하나, 로그인한 사용자 본인의 이번 주
+/// 도장 7개 + 오늘 상태만 보여준다. 카드를 탭하면
+/// _HomeFeedTabState._handleClubTap과 동일하게 StudyHomePage로 들어간다 —
+/// 여기 뜨는 스터디는 myClubsProvider(가입한 동아리 목록)에서만 오므로
+/// club.isJoined 분기 없이 항상 StudyHomePage다.
+class _StatsTab extends ConsumerWidget {
+  const _StatsTab();
+
+  /// 아래로 당겨서 새로고침: 가입한 스터디 목록을 먼저 새로 받아온 뒤, 그
+  /// 목록에 있는 스터디들의 출석 개요도 함께 새로고침한다. StudyAttendanceSummaryCard가
+  /// 쓰는 studyAttendanceOverviewProvider는 clubId별로 캐시되는 family라서,
+  /// 목록만 invalidate해서는 각 카드가 이미 캐시해 둔 예전 출석 데이터를
+  /// 계속 보여준다 — study_attendance_tab.dart의 onRefresh와 같은 패턴으로
+  /// invalidate 후 새 Future가 끝날 때까지 기다려야 스피너가 실제 최신
+  /// 데이터가 올 때까지 유지된다.
+  Future<void> _handleRefresh(WidgetRef ref) async {
+    ref.invalidate(myClubsProvider);
+    final clubs = await ref.read(myClubsProvider.future);
+    for (final club in clubs) {
+      ref.invalidate(studyAttendanceOverviewProvider(club.id));
+    }
+    await Future.wait([
+      for (final club in clubs) ref.read(studyAttendanceOverviewProvider(club.id).future),
+    ]);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('통계 화면은 아직 준비중이에요.', style: TextStyle(color: Color(0xFF8B8B8B))),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clubsAsync = ref.watch(myClubsProvider);
+
+    // "이번 주 출석 현황"을 스크롤되는 목록 안 섹션 제목이 아니라 고정 상단바
+    // (AppBar)로 보여달라는 요청사항 — my_page_tab.dart가 하단 탭 루트
+    // 화면에서 쓰는 것과 같은 패턴(자체 Scaffold + AppBar, 뒤로가기 없음,
+    // centerTitle)을 그대로 따랐다.
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          '이번 주 출석 현황',
+          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w600),
+        ),
+      ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () => _handleRefresh(ref),
+          // clubsAsync.when이 반환하는 위젯은 항상 스크롤 가능한 ListView라
+          // (로딩/에러/빈 목록 포함) RefreshIndicator가 당김 동작을 인식한다 —
+          // home_page.dart의 _HomeFeedTab, study_attendance_tab.dart와 같은
+          // 패턴.
+          child: clubsAsync.when(
+            data: (clubs) {
+              if (clubs.isEmpty) {
+                return ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(vertical: 120, horizontal: 24),
+                      child: Text(
+                        '아직 가입한 스터디가 없어요.\n스터디에 가입하면 이번 주 출석 현황을\n여기서 볼 수 있어요.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Color(0xFF8B8B8B), fontSize: 15),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(top: 8, bottom: 24),
+                children: [
+                  for (final club in clubs)
+                    StudyAttendanceSummaryCard(
+                      club: club,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => StudyHomePage(club: club)),
+                      ),
+                    ),
+                ],
+              );
+            },
+            loading: () => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                Padding(
+                  padding: EdgeInsets.only(top: 200),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ],
+            ),
+            error: (error, _) => ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 120, horizontal: 24),
+                  child: Text(
+                    '스터디 목록을 불러오지 못했어요: $error',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Color(0xFF8B8B8B), fontSize: 15),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
