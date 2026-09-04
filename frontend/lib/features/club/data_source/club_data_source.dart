@@ -30,6 +30,18 @@ abstract interface class ClubDataSource {
     File? thumbnail,
   });
 
+  /// 스터디 관리 페이지의 "스터디 정보 수정". 동아리장만 호출할 수 있다.
+  /// thumbnail이 null이면 기존 사진을 그대로 유지한다.
+  Future<ClubDetailModel> updateClub({
+    required int clubId,
+    required String name,
+    required String description,
+    File? thumbnail,
+  });
+
+  /// 스터디 관리 페이지의 "스터디 삭제". 동아리장만 호출할 수 있다.
+  Future<void> deleteClub(int clubId);
+
   /// 관리자 권한 넘기기 화면(멤버 선택)이 쓰는 동아리 멤버 목록.
   Future<List<ClubMemberModel>> getClubMembers(int clubId);
 

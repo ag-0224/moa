@@ -240,6 +240,17 @@ components:
           type: string
           pattern: '^\d{4}$'
           description: 오늘의 출석번호 4자리.
+    AttendanceCode:
+      type: object
+      properties:
+        code:
+          type: string
+          pattern: '^\d{4}$'
+          description: 오늘 발급된(또는 방금 새로 발급한) 출석번호 4자리.
+        date:
+          type: string
+          format: date
+          description: 이 출석번호가 유효한 날짜(오늘).
     MyStudyInfo:
       type: object
       properties:
@@ -627,6 +638,201 @@ paths:
                     nullable: true
         '401':
           description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+    patch:
+      summary: 스터디 정보 수정
+      description: >-
+        스터디 관리 페이지의 "스터디 정보 수정" 화면 제출. 동아리장만 호출할
+        수 있다. multipart/form-data이며, thumbnail 파트를 보내지 않으면
+        기존 사진을 그대로 유지한다. name이 비어있거나 100자를 넘으면
+        INVALID_CLUB_NAME(400), 자기 자신을 제외하고 이미 존재하는 이름이면
+        DUPLICATE_CLUB_NAME(409)을 반환한다.
+      operationId: updateClub
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                description:
+                  type: string
+                thumbnail:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 수정 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/ClubDetail'
+                  error:
+                    nullable: true
+        '400':
+          description: 이름이 비어있거나 형식이 올바르지 않음 (INVALID_CLUB_NAME)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 호출한 사용자가 동아리장이 아님 (NOT_CLUB_LEADER)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '409':
+          description: 이미 존재하는 스터디 이름 (DUPLICATE_CLUB_NAME)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+    delete:
+      summary: 스터디 삭제
+      description: >-
+        스터디 관리 페이지의 "스터디 삭제" 확인. 동아리장만 호출할 수 있다.
+        soft delete 없이 스터디를 완전히 삭제하며, 딸린 출석 기록
+        (attendance_records), 출석번호(attendance_codes), 가입 신청
+        (club_applications), 멤버(club_members)도 모두 함께 삭제한다.
+      operationId: deleteClub
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    nullable: true
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 호출한 사용자가 동아리장이 아님 (NOT_CLUB_LEADER)
           content:
             application/json:
               schema:
@@ -1349,6 +1555,80 @@ paths:
                     nullable: true
         '401':
           description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '404':
+          description: 존재하지 않는 동아리(CLUB_NOT_FOUND)이거나 가입하지 않은 동아리(CLUB_MEMBERSHIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+  /clubs/{clubId}/attendance/code:
+    get:
+      summary: 오늘의 출석번호 확인
+      description: >-
+        스터디 관리 페이지의 "출석번호 확인". 동아리장만 호출할 수 있다.
+        오늘 날짜로 이미 발급된 번호가 있으면 그대로 내려주고, 없으면 새로
+        발급해서 내려준다(멱등: 하루에 여러 번 호출해도 같은 번호).
+      operationId: getTodayAttendanceCode
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AttendanceCode'
+                  error:
+                    nullable: true
+        '401':
+          description: 인증되지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  data:
+                    nullable: true
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+        '403':
+          description: 호출한 사용자가 동아리장이 아님 (NOT_CLUB_LEADER)
           content:
             application/json:
               schema:

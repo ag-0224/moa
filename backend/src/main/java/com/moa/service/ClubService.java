@@ -20,6 +20,8 @@ import com.moa.filter.exception.InvalidAuthTokenException;
 import com.moa.filter.exception.InvalidClubNameException;
 import com.moa.filter.exception.InvalidLeaderTransferException;
 import com.moa.filter.exception.NotClubLeaderException;
+import com.moa.repository.AttendanceCodeRepository;
+import com.moa.repository.AttendanceRecordRepository;
 import com.moa.repository.ClubApplicationRepository;
 import com.moa.repository.ClubMemberRepository;
 import com.moa.repository.ClubRepository;
@@ -42,6 +44,8 @@ public class ClubService {
     private final ClubRepository clubRepository;
     private final ClubMemberRepository clubMemberRepository;
     private final ClubApplicationRepository clubApplicationRepository;
+    private final AttendanceRecordRepository attendanceRecordRepository;
+    private final AttendanceCodeRepository attendanceCodeRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
@@ -159,7 +163,7 @@ public class ClubService {
     @Transactional
     public ClubDetailResponse createClub(Long userId, String name, String description, MultipartFile thumbnail) {
         User leader = findUserOrThrow(userId);
-        String trimmedName = validateName(name);
+        String trimmedName = validateName(name, null);
 
         String thumbnailUrl = (thumbnail == null || thumbnail.isEmpty())
                 ? null
@@ -171,6 +175,48 @@ public class ClubService {
         clubMemberRepository.save(ClubMember.join(club, leader));
 
         return ClubDetailResponse.of(club, true, false, true, null);
+    }
+
+    /**
+     * 스터디 관리 페이지의 "스터디 정보 수정". 동아리장만 호출할 수 있다.
+     * thumbnail을 새로 보내지 않으면(null이거나 빈 파일) 기존 사진을 그대로
+     * 유지한다 — createClub과 달리 디스크에서 기존 파일을 지우지는 않는다
+     * (FileStorageService에 삭제 기능이 없고, 이번 범위도 아니다).
+     */
+    @Transactional
+    public ClubDetailResponse updateClub(Long userId, Long clubId, String name, String description, MultipartFile thumbnail) {
+        Club club = findClubOrThrow(clubId);
+        requireLeader(club, userId);
+
+        String trimmedName = validateName(name, clubId);
+        String thumbnailUrl = (thumbnail == null || thumbnail.isEmpty())
+                ? null
+                : fileStorageService.storeClubThumbnail(thumbnail);
+
+        club.updateInfo(trimmedName, description, thumbnailUrl);
+
+        ClubMember membership = clubMemberRepository.findByClubIdAndUserId(clubId, userId)
+                .orElseThrow(() -> new ClubMembershipNotFoundException("가입한 동아리가 아니에요."));
+        return ClubDetailResponse.of(club, true, membership.isFavorite(), true, null);
+    }
+
+    /**
+     * 스터디 관리 페이지의 "스터디 삭제". 동아리장만 호출할 수 있고, soft
+     * delete 없이 완전히 삭제한다. schema.sql에 ON DELETE CASCADE가 없어서
+     * (UserService.deleteAccount와 같은 이유) FK 제약을 지키려면 자식
+     * 테이블부터 순서대로 지워야 한다: 출석 기록 -> 출석번호 -> 가입 신청 ->
+     * 멤버 -> 마지막으로 clubs 행 자체.
+     */
+    @Transactional
+    public void deleteClub(Long userId, Long clubId) {
+        Club club = findClubOrThrow(clubId);
+        requireLeader(club, userId);
+
+        attendanceRecordRepository.deleteByClubId(clubId);
+        attendanceCodeRepository.deleteByClubId(clubId);
+        clubApplicationRepository.deleteByClubId(clubId);
+        clubMemberRepository.deleteByClubId(clubId);
+        clubRepository.delete(club);
     }
 
     /**
@@ -272,7 +318,13 @@ public class ClubService {
         return application;
     }
 
-    private String validateName(String name) {
+    /**
+     * excludeClubId가 null이면 생성(createClub) 경로 — 전체 이름 중에 중복이
+     * 있는지 본다. null이 아니면 수정(updateClub) 경로 — 자기 자신은 비교
+     * 대상에서 제외해서, 이름을 바꾸지 않고 그대로 재제출해도 중복으로
+     * 걸리지 않게 한다.
+     */
+    private String validateName(String name, Long excludeClubId) {
         String trimmed = name == null ? "" : name.trim();
         if (trimmed.isEmpty()) {
             throw new InvalidClubNameException("스터디 이름을 입력해주세요.");
@@ -280,7 +332,10 @@ public class ClubService {
         if (trimmed.length() > MAX_NAME_LENGTH) {
             throw new InvalidClubNameException("스터디 이름은 " + MAX_NAME_LENGTH + "자 이하로 입력해주세요.");
         }
-        if (clubRepository.existsByName(trimmed)) {
+        boolean duplicate = (excludeClubId == null)
+                ? clubRepository.existsByName(trimmed)
+                : clubRepository.existsByNameAndIdNot(trimmed, excludeClubId);
+        if (duplicate) {
             throw new DuplicateClubNameException("이미 사용 중인 스터디 이름이에요: " + trimmed);
         }
         return trimmed;

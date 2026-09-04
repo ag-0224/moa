@@ -23,4 +23,11 @@ public interface ClubApplicationRepository extends JpaRepository<ClubApplication
      * 이유(FK 제약)로 필요하다.
      */
     void deleteByUserId(Long userId);
+
+    /**
+     * 스터디 삭제(ClubService.deleteClub) 시 club_applications에 남아있는
+     * 신청 행을 먼저 정리하기 위해 쓴다. FK 제약 때문에 club_members와
+     * 마찬가지로 clubs 행보다 먼저 지워야 한다.
+     */
+    void deleteByClubId(Long clubId);
 }

@@ -1,3 +1,4 @@
+import '../models/attendance_code_model.dart';
 import '../models/my_study_info_model.dart';
 import '../models/study_attendance_overview_model.dart';
 
@@ -20,4 +21,9 @@ abstract class AttendanceDataSource {
   /// 달의 아무 날짜나 상관없다(년/월만 본다) — 화살표나 달력으로 다른
   /// 달/연도를 선택했을 때 그 달을 넘긴다.
   Future<MyStudyInfoModel> getMyMonthlyInfo(int clubId, DateTime month);
+
+  /// 스터디 관리 페이지의 "출석번호 확인". 동아리장만 호출할 수 있다(아니면
+  /// NotClubLeaderException). 오늘 이미 발급된 코드가 있으면 그대로, 없으면
+  /// 새로 발급해서 내려준다.
+  Future<AttendanceCodeModel> getTodayCode(int clubId);
 }
