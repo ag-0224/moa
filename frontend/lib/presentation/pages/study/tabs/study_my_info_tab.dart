@@ -175,17 +175,17 @@ class _LeaveStudyTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFEFEFEF)),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Icon(Icons.logout, color: _tabDangerRed, size: 22),
-          const SizedBox(width: 12),
-          const Expanded(
+          Icon(Icons.logout, color: _tabDangerRed, size: 22),
+          SizedBox(width: 12),
+          Expanded(
             child: Text(
               '스터디 탈퇴',
               style: TextStyle(fontSize: 15, color: _tabDangerRed, fontWeight: FontWeight.w600),
             ),
           ),
-          const Text('준비중', style: TextStyle(fontSize: 12, color: _tabGrayText)),
+          Text('준비중', style: TextStyle(fontSize: 12, color: _tabGrayText)),
         ],
       ),
     );

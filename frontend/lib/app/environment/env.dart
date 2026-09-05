@@ -1,10 +1,22 @@
-/// 환경 설정. 저장소 루트 .env.example의 FLUTTER_API_BASE_URL과 대응한다.
-/// 빌드/실행 시 --dart-define=API_BASE_URL=https://... 로 덮어쓸 수 있다.
+import 'package:flutter/foundation.dart';
+
+import 'environment.enum.dart';
+import 'flavor.dart';
+
+/// 환경 설정 클래스.
+/// `Flavor.env`를 참조하며, 동적으로 선택된 Flavor의 설정값을 반환합니다.
 class Env {
   const Env._();
 
-  static const String apiBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:8080/api/v1',
-  );
+  static String get apiBaseUrl {
+    final url = Flavor.env.apiBaseUrl;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return url.replaceAll('localhost', '10.0.2.2');
+    }
+    return url;
+  }
+
+  static Environment get currentEnvironment => Flavor.env;
+  static bool get isDev => Flavor.env == Environment.dev;
+  static bool get isProd => Flavor.env == Environment.prod;
 }
