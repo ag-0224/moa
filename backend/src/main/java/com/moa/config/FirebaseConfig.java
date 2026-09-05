@@ -31,6 +31,9 @@ public class FirebaseConfig {
         }
 
         String credentialsPath = System.getenv("FIREBASE_CREDENTIALS_PATH");
+        if (credentialsPath == null || credentialsPath.isEmpty()) {
+            credentialsPath = System.getProperty("FIREBASE_CREDENTIALS_PATH");
+        }
         try (FileInputStream serviceAccount = new FileInputStream(credentialsPath)) {
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))

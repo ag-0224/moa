@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -8,9 +9,11 @@ class Flavor {
 
   static final Flavor _instance = Flavor._();
   static late Environment _env;
+  static FirebaseApp? _firebaseApp;
 
   static Flavor get instance => _instance;
   static Environment get env => _env;
+  static FirebaseApp get firebaseApp => _firebaseApp ?? Firebase.app();
 
   static void initialize(Environment type) {
     _env = type;
@@ -31,6 +34,44 @@ class Flavor {
       return true;
     };
 
+    final app = await initializeFirebase();
+    if (app != null) {
+      _firebaseApp = app;
+    }
+
     debugPrint('[Flavor] Application initialized with environment: ${_env.type}');
+  }
+
+  /// 환경별(DEV/PROD) Firebase 프로젝트 옵션을 안전하게 바인딩합니다.
+  static Future<FirebaseApp?> initializeFirebase() async {
+    final targetOptions = _env.firebaseOptions;
+
+    // 1. 이미 동일한 projectId를 가진 앱이 초기화되어 있다면 그 앱을 사용
+    for (final app in Firebase.apps) {
+      if (app.options.projectId == targetOptions.projectId) {
+        return app;
+      }
+    }
+
+    // 2. 이미 존재하는 default 앱의 projectId가 다르면 네임드 앱으로 생성
+    try {
+      if (Firebase.apps.isEmpty) {
+        return await Firebase.initializeApp(options: targetOptions);
+      } else {
+        return await Firebase.initializeApp(
+          name: _env.type,
+          options: targetOptions,
+        );
+      }
+    } catch (error) {
+      debugPrint('[${_env.type}] FirebaseApp 초기화 경고: $error');
+      if (Firebase.apps.any((app) => app.name == _env.type)) {
+        return Firebase.app(_env.type);
+      }
+      if (Firebase.apps.isNotEmpty) {
+        return Firebase.app();
+      }
+      return null;
+    }
   }
 }

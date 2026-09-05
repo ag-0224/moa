@@ -20,7 +20,7 @@ enum Environment {
     type: 'PROD',
     apiBaseUrl: String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://api.moa.app/api/v1',
+      defaultValue: 'http://15.164.215.175:8080/api/v1',
     ),
     isDebugMode: false,
     googleServerClientId:
