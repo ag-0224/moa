@@ -3,8 +3,11 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+import '../../../app/environment/flavor.dart';
 
 /// Firebase Authentication으로 구글/애플 로그인을 수행한다.
 /// TechTalk 프로젝트(lib/features/auth)의 구현 패턴을 그대로 따른다.
@@ -17,12 +20,6 @@ abstract interface class FirebaseAuthDataSource {
 final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
   FirebaseAuthDataSourceImpl([FirebaseAuth? firebaseAuth])
       : _customFirebaseAuth = firebaseAuth;
-
-  /// Firebase 콘솔(moa-app-2026-dev)의 Google OAuth 클라이언트 ID.
-  /// google-services.json / GoogleService-Info.plist와 짝을 이루는 값으로,
-  /// 클라이언트 앱에 포함되어도 안전한 공개 식별자다(비밀 값 아님).
-  static const _googleOAuthClientId =
-      '535931109546-sakkm84ocovltm89r59a3slt8emghj7c.apps.googleusercontent.com';
 
   final FirebaseAuth? _customFirebaseAuth;
 
@@ -41,8 +38,12 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
   @override
   Future<UserCredential> signInWithGoogle() {
     return _guard('구글 로그인', () async {
+      final env = Flavor.env;
       final googleSignIn = GoogleSignIn(
-        clientId: _googleOAuthClientId,
+        clientId: kIsWeb || defaultTargetPlatform == TargetPlatform.iOS
+            ? env.googleIosClientId
+            : null,
+        serverClientId: env.googleServerClientId,
         scopes: const ['email', 'profile'],
       );
       final googleUser = await googleSignIn.signIn();

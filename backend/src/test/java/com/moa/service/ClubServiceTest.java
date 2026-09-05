@@ -20,6 +20,8 @@ import com.moa.filter.exception.DuplicateClubNameException;
 import com.moa.filter.exception.InvalidClubNameException;
 import com.moa.filter.exception.InvalidLeaderTransferException;
 import com.moa.filter.exception.NotClubLeaderException;
+import com.moa.repository.AttendanceCodeRepository;
+import com.moa.repository.AttendanceRecordRepository;
 import com.moa.repository.ClubApplicationRepository;
 import com.moa.repository.ClubMemberRepository;
 import com.moa.repository.ClubRepository;
@@ -55,6 +57,12 @@ class ClubServiceTest {
     private ClubApplicationRepository clubApplicationRepository;
 
     @Mock
+    private AttendanceRecordRepository attendanceRecordRepository;
+
+    @Mock
+    private AttendanceCodeRepository attendanceCodeRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @Mock
@@ -62,7 +70,7 @@ class ClubServiceTest {
 
     @Test
     void getMyClubsReturnsOnlyJoinedClubsWithTheirFavoriteFlag() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubMember membership = ClubMember.join(club, user);
@@ -81,7 +89,7 @@ class ClubServiceTest {
 
     @Test
     void getAllClubsMarksOnlyJoinedClubsAsJoined() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club joinedClub = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         Club notJoinedClub = newClub(2L, "등산 동아리", "박승찬", "체육", 12);
         User user = newUser(1L);
@@ -103,7 +111,7 @@ class ClubServiceTest {
 
     @Test
     void setFavoriteUpdatesMembershipWhenJoined() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubMember membership = ClubMember.join(club, user);
@@ -118,7 +126,7 @@ class ClubServiceTest {
 
     @Test
     void setFavoriteThrowsWhenNotJoined() {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
 
         when(clubMemberRepository.findByClubIdAndUserId(1L, 1L)).thenReturn(Optional.empty());
 
@@ -128,7 +136,7 @@ class ClubServiceTest {
 
     @Test
     void getClubDetailReturnsJoinedWithNullApplicationStatus() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User user = newUser(1L);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24, user);
         ClubMember membership = ClubMember.join(club, user);
@@ -147,7 +155,7 @@ class ClubServiceTest {
 
     @Test
     void getClubDetailReturnsApplicationStatusWhenNotJoined() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubApplication application = ClubApplication.apply(club, user, "자기소개".repeat(5));
@@ -164,7 +172,7 @@ class ClubServiceTest {
 
     @Test
     void getClubDetailThrowsWhenClubNotFound() {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
 
         when(clubRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -174,7 +182,7 @@ class ClubServiceTest {
 
     @Test
     void applyToClubCreatesPendingApplicationWhenNoneExists() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
 
@@ -193,7 +201,7 @@ class ClubServiceTest {
 
     @Test
     void applyToClubThrowsWhenAlreadyJoined() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubMember membership = ClubMember.join(club, user);
@@ -207,7 +215,7 @@ class ClubServiceTest {
 
     @Test
     void applyToClubThrowsWhenApplicationAlreadyPending() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubApplication application = ClubApplication.apply(club, user, "자기소개".repeat(5));
@@ -222,7 +230,7 @@ class ClubServiceTest {
 
     @Test
     void applyToClubResubmitsRejectedApplication() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "박승찬", "학술", 24);
         User user = newUser(1L);
         ClubApplication application = ClubApplication.apply(club, user, "이전 자기소개".repeat(5));
@@ -240,8 +248,8 @@ class ClubServiceTest {
     }
 
     @Test
-    void createClubSavesNewClubAndJoinsCreatorAsMember() {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+    void createClubSavesNewClubAndJoinsCreatorAsMember() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(leader));
@@ -260,8 +268,8 @@ class ClubServiceTest {
     }
 
     @Test
-    void createClubStoresThumbnailWhenFileProvided() {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+    void createClubStoresThumbnailWhenFileProvided() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         MockMultipartFile thumbnail = new MockMultipartFile("thumbnail", "photo.png", "image/png", new byte[]{1, 2, 3});
 
@@ -276,8 +284,8 @@ class ClubServiceTest {
     }
 
     @Test
-    void createClubThrowsWhenNameIsBlank() {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+    void createClubThrowsWhenNameIsBlank() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(leader));
 
@@ -287,8 +295,8 @@ class ClubServiceTest {
     }
 
     @Test
-    void createClubThrowsWhenNameAlreadyExists() {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+    void createClubThrowsWhenNameAlreadyExists() throws Exception {
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         when(userRepository.findById(1L)).thenReturn(Optional.of(leader));
         when(clubRepository.existsByName("알고리즘 스터디")).thenReturn(true);
@@ -301,7 +309,7 @@ class ClubServiceTest {
 
     @Test
     void getClubMembersReturnsAllMembersWithLeaderFlag() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         User other = newUser(2L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
@@ -323,7 +331,7 @@ class ClubServiceTest {
 
     @Test
     void getClubMembersThrowsWhenCallerNotMember() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24);
 
         when(clubRepository.findById(1L)).thenReturn(Optional.of(club));
@@ -335,7 +343,7 @@ class ClubServiceTest {
 
     @Test
     void transferLeadershipUpdatesLeaderAndLeaderNameAndReturnsLeaderFalseForCaller() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User currentLeader = newUser(1L);
         User newLeader = newUser(2L, "새 회장");
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, currentLeader);
@@ -356,7 +364,7 @@ class ClubServiceTest {
 
     @Test
     void transferLeadershipThrowsWhenCallerNotLeader() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User actualLeader = newUser(1L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, actualLeader);
 
@@ -368,7 +376,7 @@ class ClubServiceTest {
 
     @Test
     void transferLeadershipThrowsWhenTargetIsSelf() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
 
@@ -380,7 +388,7 @@ class ClubServiceTest {
 
     @Test
     void transferLeadershipThrowsWhenTargetNotMember() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
 
@@ -393,7 +401,7 @@ class ClubServiceTest {
 
     @Test
     void getPendingApplicationsReturnsOnlyPendingOnes() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         User applicant = newUser(2L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
@@ -412,7 +420,7 @@ class ClubServiceTest {
 
     @Test
     void getPendingApplicationsThrowsWhenCallerNotLeader() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
 
@@ -424,7 +432,7 @@ class ClubServiceTest {
 
     @Test
     void approveApplicationCreatesMembershipAndIncrementsMemberCount() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         User applicant = newUser(2L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
@@ -444,7 +452,7 @@ class ClubServiceTest {
 
     @Test
     void approveApplicationThrowsWhenAlreadyProcessed() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         User applicant = newUser(2L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
@@ -462,7 +470,7 @@ class ClubServiceTest {
 
     @Test
     void approveApplicationThrowsWhenApplicationBelongsToDifferentClub() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         User applicant = newUser(2L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
@@ -479,7 +487,7 @@ class ClubServiceTest {
 
     @Test
     void rejectApplicationMarksRejectedWithoutCreatingMembership() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         User applicant = newUser(2L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);
@@ -498,7 +506,7 @@ class ClubServiceTest {
 
     @Test
     void rejectApplicationThrowsWhenCallerNotLeader() throws Exception {
-        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, userRepository, fileStorageService);
+        ClubService clubService = new ClubService(clubRepository, clubMemberRepository, clubApplicationRepository, attendanceRecordRepository, attendanceCodeRepository, userRepository, fileStorageService);
         User leader = newUser(1L);
         User applicant = newUser(2L);
         Club club = newClub(1L, "알고리즘 스터디", "리더", "학술", 24, leader);

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../app/environment/env.dart';
+import '../app/style/index.dart';
 import 'pages/home/home_page.dart';
 import 'pages/sign_in/sign_in_page.dart';
 import 'pages/sign_up/sign_up_page.dart';
@@ -16,9 +18,14 @@ class MoaApp extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
 
     return MaterialApp(
-      title: 'MOA',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo, scaffoldBackgroundColor: Colors.white),
+      title: Env.isDev ? 'MOA [DEV]' : 'MOA',
+      debugShowCheckedModeBanner: Env.isDev,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      builder: (context, child) {
+        AppColor.init(context);
+        return child ?? const SizedBox.shrink();
+      },
       home: switch (authState) {
         AuthInitial() || AuthLoading() => const SplashPage(),
         AuthAuthenticated() => const HomePage(),
