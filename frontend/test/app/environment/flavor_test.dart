@@ -24,7 +24,7 @@ void main() {
       expect(Env.isDev, isFalse);
       expect(Env.isProd, isTrue);
       expect(Env.currentEnvironment.type, 'PROD');
-      expect(Flavor.env.apiBaseUrl, 'https://api.moa.app/api/v1');
+      expect(Flavor.env.apiBaseUrl, 'http://15.164.215.175:8080/api/v1');
     });
   });
 }
