@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../core/storage/token_storage.dart';
 import '../environment/env.dart';
@@ -21,7 +22,22 @@ class ApiClient {
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          if (Env.isDev) {
+            debugPrint('[HTTP Request] ${options.method} ${options.uri}');
+          }
           handler.next(options);
+        },
+        onResponse: (response, handler) {
+          if (Env.isDev) {
+            debugPrint('[HTTP Response] ${response.statusCode} ${response.requestOptions.uri}');
+          }
+          handler.next(response);
+        },
+        onError: (error, handler) {
+          if (Env.isDev) {
+            debugPrint('[HTTP Error] ${error.response?.statusCode} ${error.requestOptions.uri}: ${error.message}');
+          }
+          handler.next(error);
         },
       ),
     );
