@@ -26,7 +26,7 @@ final class FirebaseAuthDataSourceImpl implements FirebaseAuthDataSource {
   FirebaseAuth get _firebaseAuth {
     if (_customFirebaseAuth != null) return _customFirebaseAuth;
     try {
-      return FirebaseAuth.instance;
+      return FirebaseAuth.instanceFor(app: Flavor.firebaseApp);
     } catch (error) {
       throw Exception(
         'Firebase가 아직 초기화되지 않았거나 설정이 누락되었습니다. '

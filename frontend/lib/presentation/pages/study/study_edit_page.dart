@@ -122,6 +122,8 @@ class _StudyEditFormState extends ConsumerState<_StudyEditForm> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     final name = _nameController.text.trim();
     final description = _descriptionController.text.trim();
 
@@ -134,12 +136,6 @@ class _StudyEditFormState extends ConsumerState<_StudyEditForm> {
 
     setState(() => _isSubmitting = true);
 
-    // await 이후에 ScaffoldMessenger.of(context)/Navigator.of(context)를 호출하면,
-    // 그 사이에 사용자가 뒤로가기 등으로 화면을 벗어나 위젯이 deactivate된 경우
-    // "Looking up a deactivated widget's ancestor is unsafe" 에러가 난다.
-    // mounted 체크만으로는 막을 수 없으므로(디액티베이트된 상태에서도 mounted는
-    // true다), await 전에 미리 참조를 캡처해두고 그 참조만 사용한다
-    // (club_apply_page.dart의 _submit()과 같은 패턴).
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
@@ -157,11 +153,15 @@ class _StudyEditFormState extends ConsumerState<_StudyEditForm> {
       ref.invalidate(allClubsProvider);
       ref.invalidate(clubDetailProvider(widget.clubId));
 
-      messenger.showSnackBar(const SnackBar(content: Text('스터디 정보를 수정했어요.')));
+      if (messenger.mounted) {
+        messenger.showSnackBar(const SnackBar(content: Text('스터디 정보를 수정했어요.')));
+      }
       // StudyHomePage가 들고 있는 ClubModel 스냅샷(이름 등)은 이 화면 하나만
       // pop해서는 갱신되지 않는다 — TransferLeadershipPage와 같은 이유로,
       // 스터디 관리/스터디 홈을 모두 지나 목록 화면으로 돌아간다.
-      navigator.popUntil((route) => route.isFirst);
+      if (navigator.mounted) {
+        navigator.popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
